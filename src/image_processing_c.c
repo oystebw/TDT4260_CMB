@@ -10,7 +10,7 @@
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 typedef struct {
-     double red,green,blue;
+     float red,green,blue;
 } AccuratePixel;
 
 typedef struct {
@@ -26,11 +26,10 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
 	imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
 	
-	#pragma omp parallel for num_threads(16)
 	for(int i = 0; i < size; i++) {
-		imageAccurate->data[i].red   = (double) image->data[i].red;
-		imageAccurate->data[i].green = (double) image->data[i].green;
-		imageAccurate->data[i].blue  = (double) image->data[i].blue;
+		imageAccurate->data[i].red   = (float) image->data[i].red;
+		imageAccurate->data[i].green = (float) image->data[i].green;
+		imageAccurate->data[i].blue  = (float) image->data[i].blue;
 	}
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
@@ -48,7 +47,6 @@ PPMImage* convertToPPPMImage(AccurateImage* imageIn) {
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
 
-	#pragma omp parallel for num_threads(16)
     for(int i = 0; i < size; i++) {
         imageOut->data[i].red = imageIn->data[i].red;
         imageOut->data[i].green = imageIn->data[i].green;
@@ -64,13 +62,12 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 	const int height = imageIn->y;
 	
 	// Iterate over each pixel
-	#pragma omp parallel for num_threads(16)
 	for(int senterX = 0; senterX < width; senterX++) {
 
 		for(int senterY = 0; senterY < height; senterY++) {
 
 			// For each pixel we compute the magic number
-			double sum = 0;
+			float sum = 0;
 			int countIncluded = 0;
 			for(int x = -size; x <= size; x++) {
 				const int currentX = senterX + x;
@@ -83,7 +80,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 					if(currentY < 0 || currentY >= height)
 						continue;
 
-					double* colors = &(imageIn->data[width * currentY + currentX]);
+					float* colors = &(imageIn->data[width * currentY + currentX]);
 					sum += colors[colourType];
 
 					// Keep track of how many values we have included
@@ -94,7 +91,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 
 			// Now we compute the final value
 
-			double* colors = &(imageOut->data[width * senterY + senterX]);
+			float* colors = &(imageOut->data[width * senterY + senterX]);
 			colors[colourType] = sum / countIncluded;
 		}
 
@@ -116,9 +113,8 @@ PPMImage* imageDifference(AccurateImage* imageInSmall, AccurateImage* imageInLar
 	imageOut->x = width;
 	imageOut->y = height;
 
-	#pragma omp parallel for num_threads(16)
 	for(int i = 0; i < size; i++) {
-		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
+		float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 		if(value > 255)
 			imageOut->data[i].red = 255;
 		else if (value < -1.0) {
@@ -184,7 +180,6 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_tiny = convertToAccurateImage(image);
 	
 	// Process the tiny case:
-	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 2;
         blurIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
@@ -199,7 +194,6 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_small = convertToAccurateImage(image);
 	
 	// Process the small case:
-	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 3;
         blurIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
@@ -216,7 +210,6 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_medium = convertToAccurateImage(image);
 	
 	// Process the medium case:
-	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 5;
         blurIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
@@ -230,7 +223,6 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_large = convertToAccurateImage(image);
 	
 	// Do each color channel
-	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 8;
         blurIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
