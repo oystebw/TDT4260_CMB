@@ -25,6 +25,8 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
 	AccurateImage* imageAccurate;
 	imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
+	
+	#pragma omp parallel for num_threads(16)
 	for(int i = 0; i < size; i++) {
 		imageAccurate->data[i].red   = (double) image->data[i].red;
 		imageAccurate->data[i].green = (double) image->data[i].green;
@@ -46,6 +48,7 @@ PPMImage* convertToPPPMImage(AccurateImage* imageIn) {
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
 
+	#pragma omp parallel for num_threads(16)
     for(int i = 0; i < size; i++) {
         imageOut->data[i].red = imageIn->data[i].red;
         imageOut->data[i].green = imageIn->data[i].green;
@@ -61,7 +64,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 	const int height = imageIn->y;
 	
 	// Iterate over each pixel
-	#pragma omp parallel for num_threads(4)
+	#pragma omp parallel for num_threads(16)
 	for(int senterX = 0; senterX < width; senterX++) {
 
 		for(int senterY = 0; senterY < height; senterY++) {
@@ -113,7 +116,7 @@ PPMImage* imageDifference(AccurateImage* imageInSmall, AccurateImage* imageInLar
 	imageOut->x = width;
 	imageOut->y = height;
 
-	#pragma omp parallel for num_threads(4)
+	#pragma omp parallel for num_threads(16)
 	for(int i = 0; i < size; i++) {
 		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 		if(value > 255)
