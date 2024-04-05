@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-//#include <omp.h>
+#include <omp.h>
 
 #include "ppm.h"
 
