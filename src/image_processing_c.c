@@ -54,39 +54,30 @@ PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
 // blur one color channel
 void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourType, int size) {
 	
+	const int width = imageIn->x;
+	const int height = imageIn->y;
+	
 	// Iterate over each pixel
-	for(int senterX = 0; senterX < imageIn->x; senterX++) {
+	for(int senterX = 0; senterX < width; senterX++) {
 
-		for(int senterY = 0; senterY < imageIn->y; senterY++) {
+		for(int senterY = 0; senterY < height; senterY++) {
 
 			// For each pixel we compute the magic number
 			double sum = 0;
 			int countIncluded = 0;
 			for(int x = -size; x <= size; x++) {
-
+				int currentX = senterX + x;
+				// Check if we are outside the bounds
+				if(currentX < 0 || currentX >= width)
+					continue;
 				for(int y = -size; y <= size; y++) {
-					int currentX = senterX + x;
 					int currentY = senterY + y;
-
 					// Check if we are outside the bounds
-					if(currentX < 0)
-						continue;
-					if(currentX >= imageIn->x)
-						continue;
-					if(currentY < 0)
-						continue;
-					if(currentY >= imageIn->y)
+					if(currentY < 0 || currentY >= height)
 						continue;
 
-					// Now we can begin
-					int numberOfValuesInEachRow = imageIn->x;
-					int offsetOfThePixel = (numberOfValuesInEachRow * currentY + currentX);
-					if(colourType == 0)
-						sum += imageIn->data[offsetOfThePixel].red;
-					if(colourType == 1)
-						sum += imageIn->data[offsetOfThePixel].green;
-					if(colourType == 2)
-						sum += imageIn->data[offsetOfThePixel].blue;
+					double* colors = &(imageIn->data[width * currentY + currentX]);
+					sum += colors[colourType];
 
 					// Keep track of how many values we have included
 					countIncluded++;
@@ -95,18 +86,9 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 			}
 
 			// Now we compute the final value
-			double value = sum / countIncluded;
 
-
-			// Update the output image
-			int numberOfValuesInEachRow = imageOut->x; // R, G and B
-			int offsetOfThePixel = (numberOfValuesInEachRow * senterY + senterX);
-			if(colourType == 0)
-				imageOut->data[offsetOfThePixel].red = value;
-			if(colourType == 1)
-				imageOut->data[offsetOfThePixel].green = value;
-			if(colourType == 2)
-				imageOut->data[offsetOfThePixel].blue = value;
+			double* colors = &(imageOut->data[width * senterY + senterX]);
+			colors[colourType] = sum / countIncluded;
 		}
 
 	}
