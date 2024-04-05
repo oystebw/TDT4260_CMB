@@ -61,6 +61,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 	const int height = imageIn->y;
 	
 	// Iterate over each pixel
+	#pragma omp parallel for num_threads(4)
 	for(int senterX = 0; senterX < width; senterX++) {
 
 		for(int senterY = 0; senterY < height; senterY++) {
@@ -112,6 +113,7 @@ PPMImage* imageDifference(AccurateImage* imageInSmall, AccurateImage* imageInLar
 	imageOut->x = width;
 	imageOut->y = height;
 
+	#pragma omp parallel for num_threads(4)
 	for(int i = 0; i < size; i++) {
 		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 		if(value > 255)
@@ -179,6 +181,7 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_tiny = convertToAccurateImage(image);
 	
 	// Process the tiny case:
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 2;
         blurIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
@@ -193,6 +196,7 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_small = convertToAccurateImage(image);
 	
 	// Process the small case:
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 3;
         blurIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
@@ -209,6 +213,7 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_medium = convertToAccurateImage(image);
 	
 	// Process the medium case:
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 5;
         blurIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
@@ -222,6 +227,7 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate2_large = convertToAccurateImage(image);
 	
 	// Do each color channel
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 8;
         blurIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
