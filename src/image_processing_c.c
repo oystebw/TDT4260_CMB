@@ -446,10 +446,8 @@ int main(int argc, char** argv) {
 	void (*funcs[4])(AccurateImage*, AccurateImage*, const int) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
 	#pragma omp parallel for num_threads(8)
-	for(int colour = 0; colour < 3; colour++) {
-		for(int image = 0; image < 4; image++) {
-			(*funcs[image])(images[image], scratch[image], colour);
-		}
+	for(int variant = 0; variant < 12; variant++) {
+		(*funcs[variant / 3])(images[variant / 3], scratch[variant / 3], variant % 3);
 	}
 
 	PPMImage* imagesPPM[3];
