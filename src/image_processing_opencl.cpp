@@ -111,6 +111,7 @@ PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLar
 class OpenClBlur{
 public:
     OpenClBlur() {
+        
         // choose a platform containing this string if available
         string preferred_platform = "Intel";
         // select platform
