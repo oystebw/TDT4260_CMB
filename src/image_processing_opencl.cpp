@@ -161,8 +161,6 @@ public:
             errorAndExit("Error building program!");
         }
 
-        // create kernel
-        naive_kernel = Kernel(program, "naive_kernel");
         kernelHorizontal = Kernel(program, "kernelHorizontal");
         kernelVertical = Kernel(program, "kernelVertical");
     }
@@ -181,9 +179,9 @@ public:
         queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize, image->data, nullptr, &events.back().second);
         // 5 blur iterations
         blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer2, buffer1, size);
         blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer2, buffer1, size);
+        blurIteration(image, buffer1, buffer2, size);
+        blurIteration(image, buffer1, buffer2, size);
         blurIteration(image, buffer1, buffer2, size);
         // create new empty image
         AccurateImage* result = copyAccurateImage(image, false, false);
@@ -207,7 +205,6 @@ private:
     Context context;
     CommandQueue queue;
     Program program;
-    Kernel naive_kernel;
     Kernel kernelHorizontal;
     Kernel kernelVertical;
     std::vector<pair<string, Event>> events;
@@ -225,23 +222,6 @@ private:
         cerr << "total time: " << end-queued << "ns" << endl;
     }
     void blurIteration(AccurateImage* image, Buffer& src, Buffer& dst, cl_int size){
-        // enqueue the OpenCL kernel naive_kernel
-
-        // create Event for profiling
-        // events.emplace_back(make_pair("naive_kernel", Event()));
-        // // set call arguments
-        // naive_kernel.setArg(0, src);
-        // naive_kernel.setArg(1, dst);
-        // naive_kernel.setArg(2, size);
-        // // call 2D kernel
-        // queue.enqueueNDRangeKernel(
-        //         naive_kernel, // kernel to queue
-        //         NullRange, // use no offset
-        //         NDRange(image->x, image->y), // 2D kernel
-        //         NullRange, // use no local range
-        //         nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
-        //         &events.back().second // Event to use for profiling
-        // );
 
         // create Event for profiling
         events.emplace_back(make_pair("kernelHorizontal", Event()));
@@ -249,6 +229,7 @@ private:
         kernelHorizontal.setArg(0, src);
         kernelHorizontal.setArg(1, dst);
         kernelHorizontal.setArg(2, image->x);
+        kernelHorizontal.setArg(3, size);
         // call 2D kernel
         queue.enqueueNDRangeKernel(
                 kernelHorizontal, // kernel to queue
@@ -261,9 +242,10 @@ private:
 
         events.emplace_back(make_pair("kernelVertical", Event()));
         // set call arguments
-        kernelVertical.setArg(0, src);
-        kernelVertical.setArg(1, dst);
+        kernelVertical.setArg(0, dst);
+        kernelVertical.setArg(1, src);
         kernelVertical.setArg(2, image->y);
+        kernelVertical.setArg(3, size);
         // call 2D kernel
         queue.enqueueNDRangeKernel(
                 kernelVertical, // kernel to queue
