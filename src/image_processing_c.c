@@ -428,6 +428,8 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 int main(int argc, char** argv) {
 
+	omp_set_num_threads(8);
+
     PPMImage* image;
     if(argc > 1) {
         image = readPPM("flower.ppm");
