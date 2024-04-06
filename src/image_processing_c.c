@@ -432,18 +432,27 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate1_small = copyAccurateImage(imageAccurate1_tiny);
 	AccurateImage* imageAccurate1_medium = copyAccurateImage(imageAccurate1_tiny);
 	AccurateImage* imageAccurate1_large = copyAccurateImage(imageAccurate1_tiny);
-	AccurateImage* scratch = (AccurateImage*)malloc(sizeof(AccurateImage));
-	scratch->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+	AccurateImage* scratch1 = (AccurateImage*)malloc(sizeof(AccurateImage));
+	AccurateImage* scratch2 = (AccurateImage*)malloc(sizeof(AccurateImage));
+	AccurateImage* scratch3 = (AccurateImage*)malloc(sizeof(AccurateImage));
+	AccurateImage* scratch4 = (AccurateImage*)malloc(sizeof(AccurateImage));
+	scratch1->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+	scratch2->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+	scratch3->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+	scratch4->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+
+	AccurateImage* scratch[4] = {scratch1, scratch2, scratch3, scratch4};
+	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
+	void (*funcs[4])(AccurateImage*, AccurateImage*, const int) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
-	#pragma omp parallel for simd num_threads(3)
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
-        blurIteration2(imageAccurate1_tiny, scratch, colour);
-        blurIteration3(imageAccurate1_small, scratch, colour);
-        blurIteration5(imageAccurate1_medium, scratch, colour);
-        blurIteration8(imageAccurate1_large, scratch, colour);
+		#pragma omp parallel for simd num_threads(4)
+		for(int image = 0; image < 4; image++) {
+			(*funcs[image])(images[image], scratch[image], colour);
+		}
 	}
 
-	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	PPMImage* imagesPPM[3];
 
 	#pragma omp parallel for simd num_threads(3)
