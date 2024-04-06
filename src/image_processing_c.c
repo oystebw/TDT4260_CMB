@@ -469,25 +469,5 @@ int main(int argc, char** argv) {
         writeStreamPPM(stdout, imagesPPM[1]);
         writeStreamPPM(stdout, imagesPPM[2]);
     }
-
-	// free(imageAccurate1_tiny->data);
-	// free(imageAccurate1_tiny);
-	// free(imageAccurate1_small->data);
-	// free(imageAccurate1_small);
-	// free(imageAccurate1_medium->data);
-	// free(imageAccurate1_medium);
-	// free(imageAccurate1_large->data);
-	// free(imageAccurate1_large);
-	// free(scratch->data);
-	// free(scratch);
-	// free(image->data);
-	// free(image);
-	// free(final_tiny->data);
-	// free(final_tiny);
-	// free(final_small->data);
-	// free(final_small);
-	// free(final_medium->data);
-	// free(final_medium);
-	return 0;
 }
 
