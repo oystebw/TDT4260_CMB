@@ -404,51 +404,15 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 	imageOut->x = width;
 	imageOut->y = height;
 
-	for(int i = 0; i < size; i++) {
-		float value = (imageInLarge->data[i].rgb[0] - imageInSmall->data[i].rgb[0]);
-		if(value > 255)
-			imageOut->data[i].red = 255;
-		else if (value < -1.0) {
-			value = 257.0+value;
-			if(value > 255)
-				imageOut->data[i].red = 255;
-			else
-				imageOut->data[i].red = floor(value);
-		} else if (value > -1.0 && value < 0.0) {
-			imageOut->data[i].red = 0;
-		} else {
-			imageOut->data[i].red = floor(value);
-		}
-
-		value = (imageInLarge->data[i].rgb[1] - imageInSmall->data[i].rgb[1]);
-		if(value > 255)
-			imageOut->data[i].green = 255;
-		else if (value < -1.0) {
-			value = 257.0+value;
-			if(value > 255)
-				imageOut->data[i].green = 255;
-			else
-				imageOut->data[i].green = floor(value);
-		} else if (value > -1.0 && value < 0.0) {
-			imageOut->data[i].green = 0;
-		} else {
-			imageOut->data[i].green = floor(value);
-		}
-
-		value = (imageInLarge->data[i].rgb[2] - imageInSmall->data[i].rgb[2]);
-		if(value > 255)
-			imageOut->data[i].blue = 255;
-		else if (value < -1.0) {
-			value = 257.0+value;
-			if(value > 255)
-				imageOut->data[i].blue = 255;
-			else
-				imageOut->data[i].blue = floor(value);
-		} else if (value > -1.0 && value < 0.0) {
-			imageOut->data[i].blue = 0;
-		} else {
-			imageOut->data[i].blue = floor(value);
-		}
+	for(int color = 0; color < 3; color++) {
+		for(int i = 0; i < size; i++) {
+			float diff = imageInLarge->data[i].rgb[color] - imageInSmall->data[i].rgb[color];
+			if(diff < 0.0){
+				diff += 257.0;
+			}
+			char* p = (char*)&imageOut->data[i];
+			p[color] = truncf(diff);
+		}	
 	}
 	return imageOut;
 }
