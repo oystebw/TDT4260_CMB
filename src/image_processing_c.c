@@ -6,8 +6,6 @@
 
 #include "ppm.h"
 
-#pragma GCC optimize ("O3")
-
 #define BLUR_ITERATIONS 5
 
 #define DIVISOR2 5
