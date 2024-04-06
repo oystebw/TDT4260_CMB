@@ -444,13 +444,18 @@ int main(int argc, char** argv) {
 							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
 							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate))};
 
-	AccurateImage* images[5] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large, imageAccurate1_large};
+	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	void (*funcs[4])(AccurateImage*, v4Accurate*) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
-	PPMImage* imagesPPM[4];
 	
 	#pragma omp parallel for simd num_threads(4)
-	for(int i = 0; i < 4; i++) {
-		(*funcs[i])(images[i], scratch[i]);
+	for(int variant = 0; variant < 4; variant++) {
+		(*funcs[variant])(images[variant], scratch[variant]);
+	}
+
+	PPMImage* imagesPPM[3];
+
+	#pragma omp parallel for simd num_threads(3)
+	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
 
