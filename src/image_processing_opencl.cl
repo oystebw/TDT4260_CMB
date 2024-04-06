@@ -15,26 +15,20 @@ __kernel void naive_kernel(
     float3 sum = (float3) (0.0f, 0.0f, 0.0f);
     int countIncluded = 0;
     for(int x = -size; x <= size; x++) {
+        int currentX = senterX + x;
+        if(currentX < 0 || currentX >= num_cols) {
+            continue;
+        }
 
         for(int y = -size; y <= size; y++) {
-            int currentX = senterX + x;
             int currentY = senterY + y;
-
-            // Check if we are outside the bounds
-            if(currentX < 0)
+            if(currentY < 0 || currentY >= num_rows) {
                 continue;
-            if(currentX >= num_cols)
-                continue;
-            if(currentY < 0)
-                continue;
-            if(currentY >= num_rows)
-                continue;
-
-            // Now we can begin
+            }
             int offsetOfThePixel = (num_cols * currentY + currentX);
             float3 tmp = vload3(offsetOfThePixel, in_image);
             sum += tmp;
-            // Keep track of how many values we have included
+
             countIncluded++;
         }
     }
