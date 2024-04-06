@@ -89,7 +89,6 @@ void blurIteration2(AccurateImage* image, AccurateImage* scratch, const int colo
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
 
-		#pragma omp parallel for num_threads(8)
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -112,7 +111,6 @@ void blurIteration2(AccurateImage* image, AccurateImage* scratch, const int colo
 			scratch->data[y * width + width - 1].rgb[colourType] = sum / 3;
 		}
 
-		#pragma omp parallel for num_threads(8)
 		for(int x = 0; x < width; x++) {
 			sum = scratch->data[0 * width + x].rgb[colourType];
 			sum += scratch->data[1 * width + x].rgb[colourType];
@@ -145,7 +143,6 @@ void blurIteration3(AccurateImage* image, AccurateImage* scratch, const int colo
 	float sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for num_threads(8)
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -172,7 +169,6 @@ void blurIteration3(AccurateImage* image, AccurateImage* scratch, const int colo
 			sum -= image->data[y * width + width - 5].rgb[colourType];
 			scratch->data[y * width + width - 1].rgb[colourType] = sum / 4;
 		}
-		#pragma omp parallel for num_threads(8)
 		for(int x = 0; x < width; x++) {
 			sum = scratch->data[0 * width + x].rgb[colourType];
 			sum += scratch->data[1 * width + x].rgb[colourType];
@@ -210,7 +206,6 @@ void blurIteration5(AccurateImage* image, AccurateImage* scratch, const int colo
 	float sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for num_threads(8)
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -247,7 +242,6 @@ void blurIteration5(AccurateImage* image, AccurateImage* scratch, const int colo
 			sum -= image->data[y * width + width - 7].rgb[colourType];
 			scratch->data[y * width + width - 1].rgb[colourType] = sum / 6;
 		}
-		#pragma omp parallel for num_threads(8)
 		for(int x = 0; x < width; x++) {
 			sum = scratch->data[0 * width + x].rgb[colourType];
 			sum += scratch->data[1 * width + x].rgb[colourType];
@@ -295,7 +289,6 @@ void blurIteration8(AccurateImage* image, AccurateImage* scratch, const int colo
 	float sum;
 	
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for num_threads(8)
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -347,7 +340,6 @@ void blurIteration8(AccurateImage* image, AccurateImage* scratch, const int colo
 			sum -= image->data[y * width + width - 10].rgb[colourType];
 			scratch->data[y * width + width - 1].rgb[colourType] = sum / 9;
 		}
-		#pragma omp parallel for num_threads(8)
 		for(int x = 0; x < width; x++) {
 			sum = scratch->data[0 * width + x].rgb[colourType];
 			sum += scratch->data[1 * width + x].rgb[colourType];
@@ -443,7 +435,7 @@ int main(int argc, char** argv) {
 	AccurateImage* scratch = (AccurateImage*)malloc(sizeof(AccurateImage));
 	scratch->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
 	
-	//#pragma omp parallel for num_threads(3)
+	#pragma omp parallel for num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
         blurIteration2(imageAccurate1_tiny, scratch, colour);
         blurIteration3(imageAccurate1_small, scratch, colour);
@@ -451,18 +443,22 @@ int main(int argc, char** argv) {
         blurIteration8(imageAccurate1_large, scratch, colour);
 	}
 
-	PPMImage* final_tiny = imageDifference(imageAccurate1_tiny, imageAccurate1_small);
-    PPMImage* final_small = imageDifference(imageAccurate1_small, imageAccurate1_medium);
-    PPMImage* final_medium = imageDifference(imageAccurate1_medium, imageAccurate1_large);
+	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
+	PPMImage* imagesPPM[3];
+
+	#pragma omp parallel for num_threads(3)
+	for(int i = 0; i < 3; i++) {
+		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
+	}
 
     if(argc > 1) {
-        writePPM("flower_tiny.ppm", final_tiny);
-        writePPM("flower_small.ppm", final_small);
-        writePPM("flower_medium.ppm", final_medium);
+        writePPM("flower_tiny.ppm", imagesPPM[0]);
+        writePPM("flower_small.ppm", imagesPPM[1]);
+        writePPM("flower_medium.ppm", imagesPPM[2]);
     } else {
-        writeStreamPPM(stdout, final_tiny);
-        writeStreamPPM(stdout, final_small);
-        writeStreamPPM(stdout, final_medium);
+        writeStreamPPM(stdout, imagesPPM[0]);
+        writeStreamPPM(stdout, imagesPPM[1]);
+        writeStreamPPM(stdout, imagesPPM[2]);
     }
 
 	// free(imageAccurate1_tiny->data);
