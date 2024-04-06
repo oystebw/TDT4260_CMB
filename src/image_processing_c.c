@@ -10,7 +10,7 @@
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 typedef struct {
-     double red,green,blue;
+     float red,green,blue;
 } AccuratePixel;
 
 typedef struct {
@@ -26,9 +26,9 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
 	imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
 	for(int i = 0; i < size; i++) {
-		imageAccurate->data[i].red   = (double) image->data[i].red;
-		imageAccurate->data[i].green = (double) image->data[i].green;
-		imageAccurate->data[i].blue  = (double) image->data[i].blue;
+		imageAccurate->data[i].red   = (float) image->data[i].red;
+		imageAccurate->data[i].green = (float) image->data[i].green;
+		imageAccurate->data[i].blue  = (float) image->data[i].blue;
 	}
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
@@ -66,7 +66,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 		for(int senterY = 0; senterY < height; senterY++) {
 
 			// For each pixel we compute the magic number
-			double sum = 0;
+			float sum = 0;
 			int countIncluded = 0;
 			int currentX;
 			for(int x = -size; x <= size; x++) {
@@ -81,7 +81,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 					if(currentY < 0 || currentY >= height)
 						continue;
 
-					double* colors = &(imageIn->data[width * currentY + currentX]);
+					float* colors = &(imageIn->data[width * currentY + currentX]);
 					sum += colors[colourType];
 
 					// Keep track of how many values we have included
@@ -92,7 +92,7 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 
 			// Now we compute the final value
 
-			double* colors = &(imageOut->data[width * senterY + senterX]);
+			float* colors = &(imageOut->data[width * senterY + senterX]);
 			colors[colourType] = sum / countIncluded;
 		}
 
@@ -115,7 +115,7 @@ PPMImage* imageDifference(AccurateImage* imageInSmall, AccurateImage* imageInLar
 	imageOut->y = height;
 
 	for(int i = 0; i < size; i++) {
-		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
+		float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 		if(value > 255)
 			imageOut->data[i].red = 255;
 		else if (value < -1.0) {
