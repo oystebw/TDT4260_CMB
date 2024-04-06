@@ -445,7 +445,7 @@ int main(int argc, char** argv) {
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	void (*funcs[4])(AccurateImage*, AccurateImage*, const int) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
-	#pragma omp parallel for num_threads(8)
+	#pragma omp parallel for simd num_threads(8)
 	for(int variant = 0; variant < 12; variant++) {
 		(*funcs[variant / 3])(images[variant / 3], scratch[variant / 3], variant % 3);
 	}
