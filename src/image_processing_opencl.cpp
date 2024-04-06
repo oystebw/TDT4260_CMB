@@ -31,13 +31,14 @@ void errorAndExit(string error_message) {
     cerr << error_message << endl;
     exit(1);
 }
-AccurateImage* convertToAccurateImage(PPMImage *image) {
-    AccurateImage *imageAccurate;
-    imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
-    imageAccurate->x = image->x;
-    imageAccurate->y = image->y;
-    std::size_t size = image->x * image->y * sizeof(AccuratePixel);
-    imageAccurate->data = (AccuratePixel *)malloc(size);
+AccurateImage* convertToAccurateImage(PPMImage* image) {
+    const int width = image->x;
+    const int height = image->y;
+    const int size = width * height;
+    AccurateImage* imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
+    imageAccurate->x = width;
+    imageAccurate->y = height;
+    imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
     for(int i = 0; i < image->x * image->y; i++) {
         imageAccurate->data[i].red   = (float) image->data[i].red;
         imageAccurate->data[i].green = (float) image->data[i].green;
@@ -241,38 +242,27 @@ private:
 
 
 int main(int argc, char** argv){
-    // read image
     PPMImage *image;
-    // select where to read the image from
     if(argc > 1) {
-        // from file for debugging (with argument)
         image = readPPM("flower.ppm");
     } else {
-        // from stdin for cmb
         image = readStreamPPM(stdin);
     }
 
-    AccurateImage *imageAccurate = convertToAccurateImage(image);
+    AccurateImage* imageAccurate = convertToAccurateImage(image);
 
     OpenClBlur blur;
-    // apply blur
-    AccurateImage  * imageAccurate2_tiny = blur.blur(imageAccurate, 2);
-    AccurateImage  * imageAccurate2_small = blur.blur(imageAccurate, 3);
-    AccurateImage  * imageAccurate2_medium = blur.blur(imageAccurate, 5);
-    AccurateImage  * imageAccurate2_large = blur.blur(imageAccurate, 8);
+    AccurateImage* imageAccurate2_tiny = blur.blur(imageAccurate, 2);
+    AccurateImage* imageAccurate2_small = blur.blur(imageAccurate, 3);
+    AccurateImage* imageAccurate2_medium = blur.blur(imageAccurate, 5);
+    AccurateImage* imageAccurate2_large = blur.blur(imageAccurate, 8);
 
-    // an intermediate step can be saved for debugging like this
-//    writePPM("imageAccurate2_tiny.ppm", convertToPPPMImage(imageAccurate2_tiny));
-
-    // finish OpenCl execution and print events
-    // we do this only once at the end in order to keep the OpenCL queue filled
     blur.finish();
     // calculate difference
-    PPMImage *final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
-    PPMImage *final_small = imageDifference(imageAccurate2_small, imageAccurate2_medium);
-    PPMImage *final_medium = imageDifference(imageAccurate2_medium, imageAccurate2_large);
+    PPMImage* final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
+    PPMImage* final_small = imageDifference(imageAccurate2_small, imageAccurate2_medium);
+    PPMImage* final_medium = imageDifference(imageAccurate2_medium, imageAccurate2_large);
 
-    // Save the images.
     if(argc > 1) {
         writePPM("flower_tiny.ppm", final_tiny);
         writePPM("flower_small.ppm", final_small);
