@@ -90,7 +90,6 @@ void blurIteration2(AccurateImage* image, AccuratePixel* scratch, const int colo
 	float sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -112,7 +111,6 @@ void blurIteration2(AccurateImage* image, AccuratePixel* scratch, const int colo
 			sum -= image->data[y * width + width - 4].rgb[colourType];
 			scratch[y * width + width - 1].rgb[colourType] = sum / 3;
 		}
-		#pragma omp parallel for
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x].rgb[colourType];
 			sum += scratch[1 * width + x].rgb[colourType];
@@ -145,7 +143,6 @@ void blurIteration3(AccurateImage* image, AccuratePixel* scratch, const int colo
 	float sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -172,7 +169,6 @@ void blurIteration3(AccurateImage* image, AccuratePixel* scratch, const int colo
 			sum -= image->data[y * width + width - 5].rgb[colourType];
 			scratch[y * width + width - 1].rgb[colourType] = sum / 4;
 		}
-		#pragma omp parallel for
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x].rgb[colourType];
 			sum += scratch[1 * width + x].rgb[colourType];
@@ -210,7 +206,6 @@ void blurIteration5(AccurateImage* image, AccuratePixel* scratch, const int colo
 	float sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -247,7 +242,6 @@ void blurIteration5(AccurateImage* image, AccuratePixel* scratch, const int colo
 			sum -= image->data[y * width + width - 7].rgb[colourType];
 			scratch[y * width + width - 1].rgb[colourType] = sum / 6;
 		}
-		#pragma omp parallel for
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x].rgb[colourType];
 			sum += scratch[1 * width + x].rgb[colourType];
@@ -295,7 +289,6 @@ void blurIteration8(AccurateImage* image, AccuratePixel* scratch, const int colo
 	float sum;
 	
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma omp parallel for
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0].rgb[colourType];
 			sum += image->data[y * width + 1].rgb[colourType];
@@ -347,7 +340,6 @@ void blurIteration8(AccurateImage* image, AccuratePixel* scratch, const int colo
 			sum -= image->data[y * width + width - 10].rgb[colourType];
 			scratch[y * width + width - 1].rgb[colourType] = sum / 9;
 		}
-		#pragma omp parallel for
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x].rgb[colourType];
 			sum += scratch[1 * width + x].rgb[colourType];
