@@ -435,7 +435,7 @@ int main(int argc, char** argv) {
 	AccurateImage* scratch = (AccurateImage*)malloc(sizeof(AccurateImage));
 	scratch->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
 	
-	#pragma omp parallel for num_threads(3)
+	#pragma omp parallel for simd num_threads(3)
 	for(int colour = 0; colour < 3; colour++) {
         blurIteration2(imageAccurate1_tiny, scratch, colour);
         blurIteration3(imageAccurate1_small, scratch, colour);
@@ -446,7 +446,7 @@ int main(int argc, char** argv) {
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	PPMImage* imagesPPM[3];
 
-	#pragma omp parallel for num_threads(3)
+	#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
