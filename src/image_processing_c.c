@@ -431,14 +431,14 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate1_medium = copyAccurateImage(imageAccurate1_tiny);
 	AccurateImage* imageAccurate1_large = copyAccurateImage(imageAccurate1_tiny);
 	v4Accurate* scratch[4] = {(v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-								(v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-								(v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-								(v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate))};
+							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
+							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
+							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate))};
 
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	void (*funcs[4])(AccurateImage*, v4Accurate*) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
-	#pragma omp parallel for
+	#pragma omp parallel for num_threads(4)
 	for(int variant = 0; variant < 4; variant++) {
 		(*funcs[variant])(images[variant], scratch[variant]);
 	}
