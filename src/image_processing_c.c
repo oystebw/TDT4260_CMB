@@ -37,6 +37,7 @@ AccurateImage* convertToAccurateImage(const PPMImage* image) {
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	#pragma omp parallel for simd
 	for(int i = 0; i < size; i++) {
 		imageAccurate->data[i][0] = (float) image->data[i].red;
 		imageAccurate->data[i][1] = (float) image->data[i].green;
@@ -69,6 +70,7 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
 
+	#pragma omp parallel for simd
     for(int i = 0; i < size; i++) {
 		imageOut->data[i].red = imageIn->data[i][0];
 		imageOut->data[i].green = imageIn->data[i][1];
@@ -438,14 +440,14 @@ int main(int argc, char** argv) {
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	void (*funcs[4])(AccurateImage*, v4Accurate*) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
-	#pragma omp parallel for num_threads(4)
+	#pragma omp parallel for simd
 	for(int variant = 0; variant < 4; variant++) {
 		(*funcs[variant])(images[variant], scratch[variant]);
 	}
 
 	PPMImage* imagesPPM[3];
 
-	#pragma omp parallel for num_threads(3)
+	#pragma omp parallel for simd
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
