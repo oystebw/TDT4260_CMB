@@ -37,7 +37,7 @@ AccurateImage* convertToAccurateImage(const PPMImage* image) {
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
-	#pragma omp parallel for simd
+
 	for(int i = 0; i < size; i++) {
 		imageAccurate->data[i][0] = (float) image->data[i].red;
 		imageAccurate->data[i][1] = (float) image->data[i].green;
@@ -70,7 +70,6 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
 
-	#pragma omp parallel for simd
     for(int i = 0; i < size; i++) {
 		imageOut->data[i].red = imageIn->data[i][0];
 		imageOut->data[i].green = imageIn->data[i][1];
