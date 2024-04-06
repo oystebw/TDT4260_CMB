@@ -17,6 +17,15 @@
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 typedef struct {
+	unsigned char rgb[3];
+} SimplePixel;
+
+typedef struct {
+	int x, y;
+	SimplePixel *data;
+} SimpleImage;
+
+typedef struct {
      float rgb[3];
 } AccuratePixel;
 
@@ -27,7 +36,7 @@ typedef struct {
 
 AccurateImage* convertToAccurateImage(const PPMImage* image) {
 	const int size = image->x * image->y;
-	// Make a copy
+
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
 	for(int i = 0; i < size; i++) {
@@ -391,42 +400,37 @@ void blurIteration8(AccurateImage* image, AccurateImage* scratch, const int colo
 	}
 }
 
-// Perform the final step, and return it as ppm.
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
 	const int width = imageInSmall->x;
 	const int height = imageInSmall->y;
 	const int size = width * height;
 
-	PPMImage* imageOut;
-	imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel*)malloc(size * sizeof(PPMPixel));
+	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
+	SimplePixel* scratch = (SimplePixel*)malloc(sizeof(SimplePixel) * size);
 
 	imageOut->x = width;
 	imageOut->y = height;
 
 	for(int color = 0; color < 3; color++) {
+		float diff;
 		for(int i = 0; i < size; i++) {
-			float diff = imageInLarge->data[i].rgb[color] - imageInSmall->data[i].rgb[color];
-			if(diff < 0.0){
-				diff += 257.0;
-			}
-			char* p = (char*)&imageOut->data[i];
-			p[color] = truncf(diff);
+			diff = imageInLarge->data[i].rgb[color] - imageInSmall->data[i].rgb[color];
+			diff += 257.0 * (diff < 0.0);
+			scratch[i].rgb[color] = truncf(diff);
 		}	
 	}
+	imageOut->data = scratch;
+	
 	return imageOut;
 }
 
 
 int main(int argc, char** argv) {
-    // read image
-    PPMImage *image;
-    // select where to read the image from
+
+    PPMImage* image;
     if(argc > 1) {
-        // from file for debugging (with argument)
         image = readPPM("flower.ppm");
     } else {
-        // from stdin for cmb
         image = readStreamPPM(stdin);
     }
 	
@@ -449,15 +453,14 @@ int main(int argc, char** argv) {
         blurIteration5(imageAccurate1_medium, scratch, colour);
 	}
 	
-	// Do each color channel
 	for(int colour = 0; colour < 3; colour++) {
         blurIteration8(imageAccurate1_large, scratch, colour);
 	}
-	// calculate difference
+
 	PPMImage* final_tiny = imageDifference(imageAccurate1_tiny, imageAccurate1_small);
     PPMImage* final_small = imageDifference(imageAccurate1_small, imageAccurate1_medium);
     PPMImage* final_medium = imageDifference(imageAccurate1_medium, imageAccurate1_large);
-	// Save the images.
+
     if(argc > 1) {
         writePPM("flower_tiny.ppm", final_tiny);
         writePPM("flower_small.ppm", final_small);
@@ -468,24 +471,24 @@ int main(int argc, char** argv) {
         writeStreamPPM(stdout, final_medium);
     }
 
-	free(imageAccurate1_tiny->data);
-	free(imageAccurate1_tiny);
-	free(imageAccurate1_small->data);
-	free(imageAccurate1_small);
-	free(imageAccurate1_medium->data);
-	free(imageAccurate1_medium);
-	free(imageAccurate1_large->data);
-	free(imageAccurate1_large);
-	free(scratch->data);
-	free(scratch);
-	free(image->data);
-	free(image);
-	free(final_tiny->data);
-	free(final_tiny);
-	free(final_small->data);
-	free(final_small);
-	free(final_medium->data);
-	free(final_medium);
+	// free(imageAccurate1_tiny->data);
+	// free(imageAccurate1_tiny);
+	// free(imageAccurate1_small->data);
+	// free(imageAccurate1_small);
+	// free(imageAccurate1_medium->data);
+	// free(imageAccurate1_medium);
+	// free(imageAccurate1_large->data);
+	// free(imageAccurate1_large);
+	// free(scratch->data);
+	// free(scratch);
+	// free(image->data);
+	// free(image);
+	// free(final_tiny->data);
+	// free(final_tiny);
+	// free(final_small->data);
+	// free(final_small);
+	// free(final_medium->data);
+	// free(final_medium);
 	return 0;
 }
 
