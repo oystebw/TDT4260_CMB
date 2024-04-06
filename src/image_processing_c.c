@@ -6,6 +6,11 @@
 
 #include "ppm.h"
 
+#define DIVISOR2 5
+#define DIVISOR3 7
+#define DIVISOR5 11
+#define DIVISOR8 17
+
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
@@ -55,40 +60,57 @@ PPMImage* convertToPPPMImage(AccurateImage* imageIn) {
 }
 
 // blur one color channel
-void blurIteration3(AccurateImage* image, AccurateImage* scratch, int colourType) {
+void blurIteration2(AccurateImage* image, AccurateImage* scratch, int colourType) {
 	
 	const int width = image->x;
 	const int height = image->y;
 
-	const int divisor = 3;
+	float sum;
 	
 	// Iterate over each pixel
 	for(int y = 0; y < height; y++) {
-		float sum = image->data[y * width + 0].rgb[colourType] + image->data[y * width + 1].rgb[colourType];
-		scratch->data[y * width + 0].rgb[colourType] = sum / 2;
+		sum = image->data[y * width + 0].rgb[colourType];
+		sum += image->data[y * width + 1].rgb[colourType];
+		sum += image->data[y * width + 2].rgb[colourType];
+		scratch->data[y * width + 0].rgb[colourType] = sum / 3;
+		sum += image->data[y * width + 3].rgb[colourType];
+		scratch->data[y * width + 1].rgb[colourType] = sum / 4;
+		sum += image->data[y * width + 4].rgb[colourType];
+		scratch->data[y * width + 2].rgb[colourType] = sum / DIVISOR2;
 
-		for(int x = 1; x < width - 1; x++) {
-			sum = image->data[y * width + x - 1].rgb[colourType] + image->data[y * width + x].rgb[colourType] + image->data[y * width + x + 1].rgb[colourType];
-			scratch->data[y * width + x].rgb[colourType] = sum / divisor;
+		for(int x = 3; x < width - 2; x++) {
+			sum -= image->data[y * width + x - 3].rgb[colourType];
+			sum += image->data[y * width + x + 2].rgb[colourType];
+			scratch->data[y * width + x].rgb[colourType] = sum / DIVISOR2;
 		}
 
-		sum = image->data[y * width + width - 2].rgb[colourType] + image->data[y * width + width - 1].rgb[colourType];
-		scratch->data[y * width + width - 1].rgb[colourType] = sum / 2;
+		sum -= image->data[y * width + width - 5].rgb[colourType];
+		scratch->data[y * width + width - 2].rgb[colourType] = sum / 4;
+		sum -= image->data[y * width + width - 4].rgb[colourType];
+		scratch->data[y * width + width - 1].rgb[colourType] = sum / 3;
 	}
 
-	for(int x = 0; x < height; x++) {
-		float sum = scratch->data[0 * width + x].rgb[colourType] + scratch->data[1 * width + x].rgb[colourType];
-		image->data[0 * width + 0].rgb[colourType] = sum / 2;
+	for(int x = 0; x < width; x++) {
+		sum = scratch->data[0 * width + x].rgb[colourType];
+		sum += scratch->data[1 * width + x].rgb[colourType];
+		sum += scratch->data[2 * width + x].rgb[colourType];
+		image->data[0 * width + x].rgb[colourType] = sum / 3;
+		sum += scratch->data[3 * width + x].rgb[colourType];
+		image->data[1 * width + x].rgb[colourType] = sum / 4;
+		sum += scratch->data[4 * width + x].rgb[colourType];
+		image->data[2 * width + x].rgb[colourType] = sum / DIVISOR2;
 
-		for(int y = 1; y < height - 1; y++) {
-			sum = scratch->data[(y - 1) * width + x].rgb[colourType] + scratch->data[y * width + x].rgb[colourType] + scratch->data[(y + 1) * width + x].rgb[colourType];
-			image->data[y * width + x].rgb[colourType] = sum / divisor;
+		for(int y = 3; y < height - 2; y++) {
+			sum -= scratch->data[(y - 3) * width + x].rgb[colourType];
+			sum += scratch->data[(y + 2) * width + x].rgb[colourType];
+			image->data[y * width + x].rgb[colourType] = sum / DIVISOR2;
 		}
 
-		sum = scratch->data[(height - 2) * width + x].rgb[colourType] + scratch->data[(height - 1) * width + x].rgb[colourType];
-		image->data[(height - 1) * width + width - 1].rgb[colourType] = sum / 2;
+		sum -= scratch->data[(height - 5) * width + x].rgb[colourType];
+		image->data[(height - 2) * width + x].rgb[colourType] = sum / 4;
+		sum -= scratch->data[(height - 4) * width + x].rgb[colourType];
+		image->data[(height - 1) * width + x].rgb[colourType] = sum / 3;
 	}
-
 }
 
 
@@ -174,11 +196,11 @@ int main(int argc, char** argv) {
 	// Process the tiny case:
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 2;
-        blurIteration3(imageAccurate1_tiny, imageAccurate2_tiny, colour);
-        blurIteration3(imageAccurate1_tiny, imageAccurate2_tiny, colour);
-        blurIteration3(imageAccurate1_tiny, imageAccurate2_tiny, colour);
-        blurIteration3(imageAccurate1_tiny, imageAccurate2_tiny, colour);
-        blurIteration3(imageAccurate1_tiny, imageAccurate2_tiny, colour);
+        blurIteration2(imageAccurate1_tiny, imageAccurate2_tiny, colour);
+        blurIteration2(imageAccurate1_tiny, imageAccurate2_tiny, colour);
+        blurIteration2(imageAccurate1_tiny, imageAccurate2_tiny, colour);
+        blurIteration2(imageAccurate1_tiny, imageAccurate2_tiny, colour);
+        blurIteration2(imageAccurate1_tiny, imageAccurate2_tiny, colour);
 	}
 	
 	
@@ -188,11 +210,11 @@ int main(int argc, char** argv) {
 	// Process the small case:
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 3;
-        blurIteration3(imageAccurate1_small, imageAccurate2_small, colour);
-        blurIteration3(imageAccurate1_small, imageAccurate2_small, colour);
-        blurIteration3(imageAccurate1_small, imageAccurate2_small, colour);
-        blurIteration3(imageAccurate1_small, imageAccurate2_small, colour);
-        blurIteration3(imageAccurate1_small, imageAccurate2_small, colour);
+        blurIteration2(imageAccurate1_small, imageAccurate2_small, colour);
+        blurIteration2(imageAccurate1_small, imageAccurate2_small, colour);
+        blurIteration2(imageAccurate1_small, imageAccurate2_small, colour);
+        blurIteration2(imageAccurate1_small, imageAccurate2_small, colour);
+        blurIteration2(imageAccurate1_small, imageAccurate2_small, colour);
 	}
 
     // an intermediate step can be saved for debugging like this
@@ -204,11 +226,11 @@ int main(int argc, char** argv) {
 	// Process the medium case:
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 5;
-        blurIteration3(imageAccurate1_medium, imageAccurate2_medium, colour);
-        blurIteration3(imageAccurate1_medium, imageAccurate2_medium, colour);
-        blurIteration3(imageAccurate1_medium, imageAccurate2_medium, colour);
-        blurIteration3(imageAccurate1_medium, imageAccurate2_medium, colour);
-        blurIteration3(imageAccurate1_medium, imageAccurate2_medium, colour);
+        blurIteration2(imageAccurate1_medium, imageAccurate2_medium, colour);
+        blurIteration2(imageAccurate1_medium, imageAccurate2_medium, colour);
+        blurIteration2(imageAccurate1_medium, imageAccurate2_medium, colour);
+        blurIteration2(imageAccurate1_medium, imageAccurate2_medium, colour);
+        blurIteration2(imageAccurate1_medium, imageAccurate2_medium, colour);
 	}
 	
 	AccurateImage* imageAccurate1_large = convertToAccurateImage(image);
@@ -217,11 +239,11 @@ int main(int argc, char** argv) {
 	// Do each color channel
 	for(int colour = 0; colour < 3; colour++) {
 		int size = 8;
-        blurIteration3(imageAccurate1_large, imageAccurate2_large, colour);
-        blurIteration3(imageAccurate1_large, imageAccurate2_large, colour);
-        blurIteration3(imageAccurate1_large, imageAccurate2_large, colour);
-        blurIteration3(imageAccurate1_large, imageAccurate2_large, colour);
-        blurIteration3(imageAccurate1_large, imageAccurate2_large, colour);
+        blurIteration2(imageAccurate1_large, imageAccurate2_large, colour);
+        blurIteration2(imageAccurate1_large, imageAccurate2_large, colour);
+        blurIteration2(imageAccurate1_large, imageAccurate2_large, colour);
+        blurIteration2(imageAccurate1_large, imageAccurate2_large, colour);
+        blurIteration2(imageAccurate1_large, imageAccurate2_large, colour);
 	}
 	// calculate difference
 	PPMImage* final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
