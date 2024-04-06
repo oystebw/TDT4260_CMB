@@ -48,16 +48,16 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
 }
 
 AccurateImage* copyAccurateImage(AccurateImage *image, bool allocate_data, bool copy_pixels) {
-    // Make a copy
-    AccurateImage *imageAccurate;
-    imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
-    imageAccurate->x = image->x;
-    imageAccurate->y = image->y;
-    std::size_t size = image->x * image->y * sizeof(AccuratePixel);
+    const int width = image->x;
+    const int height = image->y;
+    const int size = width * height;
+    AccurateImage *imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
+    imageAccurate->x = width;
+    imageAccurate->y = height;
     if(allocate_data){
-        imageAccurate->data = (AccuratePixel *)malloc(size);
+        imageAccurate->data = (AccuratePixel *)malloc(size * sizeof(AccuratePixel));
         if(copy_pixels){
-            memcpy(imageAccurate->data, image->data, size);
+            memcpy(imageAccurate->data, image->data, size * sizeof(AccuratePixel));
         }
     }
     return imageAccurate;
