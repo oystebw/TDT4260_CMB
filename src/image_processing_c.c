@@ -68,13 +68,15 @@ void blurIteration(AccurateImage *imageOut, AccurateImage *imageIn, int colourTy
 			// For each pixel we compute the magic number
 			double sum = 0;
 			int countIncluded = 0;
+			int currentX;
 			for(int x = -size; x <= size; x++) {
-				const int currentX = senterX + x;
+				currentX = senterX + x;
 				// Check if we are outside the bounds
 				if(currentX < 0 || currentX >= width)
 					continue;
+				int currentY;
 				for(int y = -size; y <= size; y++) {
-					const int currentY = senterY + y;
+					currentY = senterY + y;
 					// Check if we are outside the bounds
 					if(currentY < 0 || currentY >= height)
 						continue;
