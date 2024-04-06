@@ -86,6 +86,7 @@ void blurIteration2(AccurateImage* image, v4Accurate* scratch) {
 	v4Accurate sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0];
 			sum += image->data[y * width + 1];
@@ -107,6 +108,7 @@ void blurIteration2(AccurateImage* image, v4Accurate* scratch) {
 			sum -= image->data[y * width + width - 4];
 			scratch[y * width + width - 1] = sum / 3;
 		}
+		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x];
 			sum += scratch[1 * width + x];
@@ -139,6 +141,7 @@ void blurIteration3(AccurateImage* image, v4Accurate* scratch) {
 	v4Accurate sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0];
 			sum += image->data[y * width + 1];
@@ -165,6 +168,7 @@ void blurIteration3(AccurateImage* image, v4Accurate* scratch) {
 			sum -= image->data[y * width + width - 5];
 			scratch[y * width + width - 1] = sum / 4;
 		}
+		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x];
 			sum += scratch[1 * width + x];
@@ -202,6 +206,7 @@ void blurIteration5(AccurateImage* image, v4Accurate* scratch) {
 	v4Accurate sum;
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0];
 			sum += image->data[y * width + 1];
@@ -238,6 +243,7 @@ void blurIteration5(AccurateImage* image, v4Accurate* scratch) {
 			sum -= image->data[y * width + width - 7];
 			scratch[y * width + width - 1] = sum / 6;
 		}
+		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x];
 			sum += scratch[1 * width + x];
@@ -285,6 +291,7 @@ void blurIteration8(AccurateImage* image, v4Accurate* scratch) {
 	v4Accurate sum;
 	
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 			sum = image->data[y * width + 0];
 			sum += image->data[y * width + 1];
@@ -336,6 +343,7 @@ void blurIteration8(AccurateImage* image, v4Accurate* scratch) {
 			sum -= image->data[y * width + width - 10];
 			scratch[y * width + width - 1] = sum / 9;
 		}
+		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 			sum = scratch[0 * width + x];
 			sum += scratch[1 * width + x];
@@ -439,14 +447,14 @@ int main(int argc, char** argv) {
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	void (*funcs[4])(AccurateImage*, v4Accurate*) = {&blurIteration2, &blurIteration3, &blurIteration5, &blurIteration8};
 	
-	#pragma omp parallel for num_threads(4)
+	#pragma omp parallel for simd num_threads(4)
 	for(int variant = 0; variant < 4; variant++) {
 		(*funcs[variant])(images[variant], scratch[variant]);
 	}
 
 	PPMImage* imagesPPM[3];
 
-	#pragma omp parallel for num_threads(3)
+	#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
