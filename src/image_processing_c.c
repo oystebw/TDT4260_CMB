@@ -444,17 +444,8 @@ int main(int argc, char** argv) {
 	#pragma omp parallel for
 	for(int colour = 0; colour < 3; colour++) {
         blurIteration2(imageAccurate1_tiny, scratch, colour);
-	}
-	#pragma omp parallel for
-	for(int colour = 0; colour < 3; colour++) {
         blurIteration3(imageAccurate1_small, scratch, colour);
-	}
-	#pragma omp parallel for
-	for(int colour = 0; colour < 3; colour++) {
         blurIteration5(imageAccurate1_medium, scratch, colour);
-	}
-	#pragma omp parallel for
-	for(int colour = 0; colour < 3; colour++) {
         blurIteration8(imageAccurate1_large, scratch, colour);
 	}
 
