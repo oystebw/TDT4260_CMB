@@ -258,6 +258,119 @@ void blurIteration5(AccurateImage* image, AccurateImage* scratch, int colourType
 	}
 }
 
+void blurIteration8(AccurateImage* image, AccurateImage* scratch, int colourType) {
+	
+	const int width = image->x;
+	const int height = image->y;
+
+	float sum;
+	
+	// Iterate over each pixel
+	for(int y = 0; y < height; y++) {
+		sum = image->data[y * width + 0].rgb[colourType];
+		sum += image->data[y * width + 1].rgb[colourType];
+		sum += image->data[y * width + 2].rgb[colourType];
+		sum += image->data[y * width + 3].rgb[colourType];
+		sum += image->data[y * width + 4].rgb[colourType];
+		sum += image->data[y * width + 5].rgb[colourType];
+		sum += image->data[y * width + 6].rgb[colourType];
+		sum += image->data[y * width + 7].rgb[colourType];
+		sum += image->data[y * width + 8].rgb[colourType];
+		scratch->data[y * width + 0].rgb[colourType] = sum / 9;
+		sum += image->data[y * width + 9].rgb[colourType];
+		scratch->data[y * width + 1].rgb[colourType] = sum / 10;
+		sum += image->data[y * width + 10].rgb[colourType];
+		scratch->data[y * width + 2].rgb[colourType] = sum / 11;
+		sum += image->data[y * width + 11].rgb[colourType];
+		scratch->data[y * width + 3].rgb[colourType] = sum / 12;
+		sum += image->data[y * width + 12].rgb[colourType];
+		scratch->data[y * width + 4].rgb[colourType] = sum / 13;
+		sum += image->data[y * width + 13].rgb[colourType];
+		scratch->data[y * width + 5].rgb[colourType] = sum / 14;
+		sum += image->data[y * width + 14].rgb[colourType];
+		scratch->data[y * width + 6].rgb[colourType] = sum / 15;
+		sum += image->data[y * width + 15].rgb[colourType];
+		scratch->data[y * width + 7].rgb[colourType] = sum / 16;
+		sum += image->data[y * width + 16].rgb[colourType];
+		scratch->data[y * width + 8].rgb[colourType] = sum / DIVISOR8;
+
+		for(int x = 9; x < width - 8; x++) {
+			sum -= image->data[y * width + x - 9].rgb[colourType];
+			sum += image->data[y * width + x + 8].rgb[colourType];
+			scratch->data[y * width + x].rgb[colourType] = sum / DIVISOR8;
+		}
+
+		sum -= image->data[y * width + width - 17].rgb[colourType];
+		scratch->data[y * width + width - 8].rgb[colourType] = sum / 16;
+		sum -= image->data[y * width + width - 16].rgb[colourType];
+		scratch->data[y * width + width - 7].rgb[colourType] = sum / 15;
+		sum -= image->data[y * width + width - 15].rgb[colourType];
+		scratch->data[y * width + width - 6].rgb[colourType] = sum / 14;
+		sum -= image->data[y * width + width - 14].rgb[colourType];
+		scratch->data[y * width + width - 5].rgb[colourType] = sum / 13;
+		sum -= image->data[y * width + width - 13].rgb[colourType];
+		scratch->data[y * width + width - 4].rgb[colourType] = sum / 12;
+		sum -= image->data[y * width + width - 12].rgb[colourType];
+		scratch->data[y * width + width - 3].rgb[colourType] = sum / 11;
+		sum -= image->data[y * width + width - 11].rgb[colourType];
+		scratch->data[y * width + width - 2].rgb[colourType] = sum / 10;
+		sum -= image->data[y * width + width - 10].rgb[colourType];
+		scratch->data[y * width + width - 1].rgb[colourType] = sum / 9;
+	}
+
+	for(int x = 0; x < width; x++) {
+		sum = scratch->data[0 * width + x].rgb[colourType];
+		sum += scratch->data[1 * width + x].rgb[colourType];
+		sum += scratch->data[2 * width + x].rgb[colourType];
+		sum += scratch->data[3 * width + x].rgb[colourType];
+		sum += scratch->data[4 * width + x].rgb[colourType];
+		sum += scratch->data[5 * width + x].rgb[colourType];
+		sum += scratch->data[6 * width + x].rgb[colourType];
+		sum += scratch->data[7 * width + x].rgb[colourType];
+		sum += scratch->data[8 * width + x].rgb[colourType];
+		image->data[0 * width + x].rgb[colourType] = sum / 9;
+		sum += scratch->data[9 * width + x].rgb[colourType];
+		image->data[1 * width + x].rgb[colourType] = sum / 10;
+		sum += scratch->data[10 * width + x].rgb[colourType];
+		image->data[2 * width + x].rgb[colourType] = sum / 11;
+		sum += scratch->data[11 * width + x].rgb[colourType];
+		image->data[3 * width + x].rgb[colourType] = sum / 12;
+		sum += scratch->data[12 * width + x].rgb[colourType];
+		image->data[4 * width + x].rgb[colourType] = sum / 13;
+		sum += scratch->data[13 * width + x].rgb[colourType];
+		image->data[5 * width + x].rgb[colourType] = sum / 14;
+		sum += scratch->data[14 * width + x].rgb[colourType];
+		image->data[6 * width + x].rgb[colourType] = sum / 15;
+		sum += scratch->data[15 * width + x].rgb[colourType];
+		image->data[7 * width + x].rgb[colourType] = sum / 16;
+		sum += scratch->data[16 * width + x].rgb[colourType];
+		image->data[8 * width + x].rgb[colourType] = sum / DIVISOR8;
+
+		for(int y = 9; y < height - 8; y++) {
+			sum -= scratch->data[(y - 9) * width + x].rgb[colourType];
+			sum += scratch->data[(y + 8) * width + x].rgb[colourType];
+			image->data[y * width + x].rgb[colourType] = sum / DIVISOR8;
+		}
+
+		sum -= scratch->data[(height - 17) * width + x].rgb[colourType];
+		image->data[(height - 8) * width + x].rgb[colourType] = sum / 16;
+		sum -= scratch->data[(height - 16) * width + x].rgb[colourType];
+		image->data[(height - 7) * width + x].rgb[colourType] = sum / 15;
+		sum -= scratch->data[(height - 15) * width + x].rgb[colourType];
+		image->data[(height - 6) * width + x].rgb[colourType] = sum / 14;
+		sum -= scratch->data[(height - 14) * width + x].rgb[colourType];
+		image->data[(height - 5) * width + x].rgb[colourType] = sum / 13;
+		sum -= scratch->data[(height - 13) * width + x].rgb[colourType];
+		image->data[(height - 4) * width + x].rgb[colourType] = sum / 12;
+		sum -= scratch->data[(height - 12) * width + x].rgb[colourType];
+		image->data[(height - 3) * width + x].rgb[colourType] = sum / 11;
+		sum -= scratch->data[(height - 11) * width + x].rgb[colourType];
+		image->data[(height - 2) * width + x].rgb[colourType] = sum / 10;
+		sum -= scratch->data[(height - 10) * width + x].rgb[colourType];
+		image->data[(height - 1) * width + x].rgb[colourType] = sum / 9;
+	}
+}
+
 // Perform the final step, and return it as ppm.
 PPMImage* imageDifference(AccurateImage* imageInSmall, AccurateImage* imageInLarge) {
 	const int width = imageInSmall->x;
