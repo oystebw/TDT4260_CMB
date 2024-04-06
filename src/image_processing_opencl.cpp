@@ -31,7 +31,7 @@ void errorAndExit(string error_message) {
     cerr << error_message << endl;
     exit(1);
 }
-AccurateImage *convertToAccurateImage(PPMImage *image) {
+AccurateImage* convertToAccurateImage(PPMImage *image) {
     AccurateImage *imageAccurate;
     imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
     imageAccurate->x = image->x;
@@ -46,7 +46,7 @@ AccurateImage *convertToAccurateImage(PPMImage *image) {
     return imageAccurate;
 }
 
-AccurateImage *copyAccurateImage(AccurateImage *image, bool allocate_data, bool copy_pixels) {
+AccurateImage* copyAccurateImage(AccurateImage *image, bool allocate_data, bool copy_pixels) {
     // Make a copy
     AccurateImage *imageAccurate;
     imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
@@ -62,7 +62,7 @@ AccurateImage *copyAccurateImage(AccurateImage *image, bool allocate_data, bool 
     return imageAccurate;
 }
 
-PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
+PPMImage* convertToPPPMImage(AccurateImage *imageIn) {
     PPMImage *imageOut;
     imageOut = (PPMImage *)malloc(sizeof(PPMImage));
     imageOut->data = (PPMPixel*)malloc(imageIn->x * imageIn->y * sizeof(PPMPixel));
@@ -80,63 +80,30 @@ PPMImage * convertToPPPMImage(AccurateImage *imageIn) {
 
 
 // Perform the final step, and return it as ppm.
-PPMImage * imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLarge) {
-    PPMImage *imageOut;
-    imageOut = (PPMImage *)malloc(sizeof(PPMImage));
-    imageOut->data = (PPMPixel*)malloc(imageInSmall->x * imageInSmall->y * sizeof(PPMPixel));
+PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLarge) {	
+    const int width = imageInSmall->x;
+	const int height = imageInSmall->y;
+	const int size = width * height;
 
-    imageOut->x = imageInSmall->x;
-    imageOut->y = imageInSmall->y;
+	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
+	imageOut->data = (PPMPixel*)malloc(size * sizeof(PPMPixel));
 
-    for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
-        float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
-        if(value > 255)
-            imageOut->data[i].red = 255;
-        else if (value < -1.0) {
-            value = 257.0+value;
-            if(value > 255)
-                imageOut->data[i].red = 255;
-            else
-                imageOut->data[i].red = floor(value);
-        } else if (value > -1.0 && value < 0.0) {
-            imageOut->data[i].red = 0;
-        } else {
-            imageOut->data[i].red = floor(value);
-        }
-
-        value = (imageInLarge->data[i].green - imageInSmall->data[i].green);
-        if(value > 255)
-            imageOut->data[i].green = 255;
-        else if (value < -1.0) {
-            value = 257.0+value;
-            if(value > 255)
-                imageOut->data[i].green = 255;
-            else
-                imageOut->data[i].green = floor(value);
-        } else if (value > -1.0 && value < 0.0) {
-            imageOut->data[i].green = 0;
-        } else {
-            imageOut->data[i].green = floor(value);
-        }
-
-        value = (imageInLarge->data[i].blue - imageInSmall->data[i].blue);
-        if(value > 255)
-            imageOut->data[i].blue = 255;
-        else if (value < -1.0) {
-            value = 257.0+value;
-            if(value > 255)
-                imageOut->data[i].blue = 255;
-            else
-                imageOut->data[i].blue = floor(value);
-        } else if (value > -1.0 && value < 0.0) {
-            imageOut->data[i].blue = 0;
-        } else {
-            imageOut->data[i].blue = floor(value);
-        }
-    }
-
-
-    return imageOut;
+	imageOut->x = width;
+	imageOut->y = height;
+	#pragma GCC unroll 16
+	for(int i = 0; i < size; i++) {
+		float red = imageInLarge->data[i].red - imageInSmall->data[i].red;
+		float green = imageInLarge->data[i].green - imageInSmall->data[i].green;
+		float blue = imageInLarge->data[i].blue - imageInSmall->data[i].blue;
+		red += 257.0 * (red < 0.0);
+		green += 257.0 * (green < 0.0);
+		blue += 257.0 * (blue < 0.0);
+		imageOut->data[i].red = red;
+		imageOut->data[i].green = green;
+		imageOut->data[i].blue = blue;
+	}
+	
+	return imageOut;
 }
 
 
@@ -195,7 +162,7 @@ public:
         // create kernel
         naive_kernel = Kernel(program, "naive_kernel");
     }
-    AccurateImage * blur(AccurateImage *image, int size){
+    AccurateImage* blur(AccurateImage *image, int size){
         // perform blur operation
 
         // allocate two buffers:
@@ -251,7 +218,7 @@ private:
         cerr << "run time: " << end-start << "ns" << endl;
         cerr << "total time: " << end-queued << "ns" << endl;
     }
-    void blurIteration(AccurateImage *image, Buffer& src, Buffer& dst, cl_int size){
+    void blurIteration(AccurateImage* image, Buffer& src, Buffer& dst, cl_int size){
         // enqueue the OpenCL kernel naive_kernel
 
         // create Event for profiling
