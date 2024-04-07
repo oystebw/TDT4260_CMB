@@ -35,7 +35,7 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
     const int width = image->x;
     const int height = image->y;
     const int size = width * height;
-    AccurateImage* imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
+    AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
     imageAccurate->x = width;
     imageAccurate->y = height;
     imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
@@ -47,15 +47,15 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
     return imageAccurate;
 }
 
-AccurateImage* copyAccurateImage(AccurateImage *image, bool allocate_data, bool copy_pixels) {
+AccurateImage* copyAccurateImage(AccurateImage* image, bool allocate_data, bool copy_pixels) {
     const int width = image->x;
     const int height = image->y;
     const int size = width * height;
-    AccurateImage *imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
+    AccurateImage *imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
     imageAccurate->x = width;
     imageAccurate->y = height;
     if(allocate_data){
-        imageAccurate->data = (AccuratePixel *)malloc(size * sizeof(AccuratePixel));
+        imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
         if(copy_pixels){
             memcpy(imageAccurate->data, image->data, size * sizeof(AccuratePixel));
         }
@@ -91,7 +91,6 @@ PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLar
 
 	imageOut->x = width;
 	imageOut->y = height;
-	#pragma GCC unroll 16
 	for(int i = 0; i < size; i++) {
 		float red = imageInLarge->data[i].red - imageInSmall->data[i].red;
 		float green = imageInLarge->data[i].green - imageInSmall->data[i].green;
@@ -165,29 +164,23 @@ public:
         kernelVertical = Kernel(program, "kernelVertical");
     }
     AccurateImage* blur(AccurateImage* image, int size){
-        // perform blur operation
 
-        // allocate two buffers:
-        // use sizeof(AccuratePixel) instead of sizeof(float3) because sizeof(float3) = sizeof(float4)
-        // even though vload3 and vstore3 can operate on packed arrays
         std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
         Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
         Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
-        // create a new Event so we know how long it took
+
         events.emplace_back(make_pair("copy buffer to image", Event()));
-        // copy image to buffer
+
         queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize, image->data, nullptr, &events.back().second);
-        // 5 blur iterations
-        blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer1, buffer2, size);
-        blurIteration(image, buffer1, buffer2, size);
-        // create new empty image
+
+        for(int i = 0; i < 5; i++){
+            blurIteration(image, buffer1, buffer2, size);
+        }
+
         AccurateImage* result = copyAccurateImage(image, true, false);
-        // push back new event
+
         events.emplace_back(make_pair("map buffer in memory", Event()));
-        // map buffer in memory - avoids having to copy again
+
         result->data = (AccuratePixel*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         return result;
     }
@@ -270,24 +263,27 @@ int main(int argc, char** argv){
     AccurateImage* imageAccurate = convertToAccurateImage(image);
 
     OpenClBlur blur;
-    AccurateImage* imageAccurate2_tiny = blur.blur(imageAccurate, 2);
-    AccurateImage* imageAccurate2_small = blur.blur(imageAccurate, 3);
-    AccurateImage* imageAccurate2_medium = blur.blur(imageAccurate, 5);
-    AccurateImage* imageAccurate2_large = blur.blur(imageAccurate, 8);
-
+    const int sizes[] = {2, 3, 5, 8};
+    AccurateImage* images[4];
+    #pragma omp parallel for num_threads(4)
+    for(int i = 0; i < 4; i++){
+        images[i] = blur.blur(imageAccurate, sizes[i]);
+    }
     blur.finish();
 
-    PPMImage* final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
-    PPMImage* final_small = imageDifference(imageAccurate2_small, imageAccurate2_medium);
-    PPMImage* final_medium = imageDifference(imageAccurate2_medium, imageAccurate2_large);
+    PPMImage* final_images[3];
+    #pragma omp parallel for num_threads(3)
+    for(int i = 0; i < 3; i++){
+        final_images[i] = imageDifference(images[i], images[i+1]);
+    }
 
     if(argc > 1) {
-        writePPM("flower_tiny.ppm", final_tiny);
-        writePPM("flower_small.ppm", final_small);
-        writePPM("flower_medium.ppm", final_medium);
+        writePPM("flower_tiny.ppm", final_images[0]);
+        writePPM("flower_small.ppm", final_images[1]);
+        writePPM("flower_medium.ppm", final_images[2]);
     } else {
-        writeStreamPPM(stdout, final_tiny);
-        writeStreamPPM(stdout, final_small);
-        writeStreamPPM(stdout, final_medium);
+        writeStreamPPM(stdout, final_images[0]);
+        writeStreamPPM(stdout, final_images[1]);
+        writeStreamPPM(stdout, final_images[2]);
     }
 }
