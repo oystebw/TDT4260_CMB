@@ -183,12 +183,13 @@ public:
         blurIteration(image, buffer1, buffer2, size);
         blurIteration(image, buffer1, buffer2, size);
         blurIteration(image, buffer1, buffer2, size);
+        std::swap(buffer1, buffer2);
         // create new empty image
         AccurateImage* result = copyAccurateImage(image, false, false);
         // push back new event
         events.emplace_back(make_pair("map buffer in memory", Event()));
         // map buffer in memory - avoids having to copy again
-        result->data = (AccuratePixel*)queue.enqueueMapBuffer(buffer2,CL_FALSE,CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        result->data = (AccuratePixel*)queue.enqueueMapBuffer(buffer1,CL_FALSE,CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         return result;
     }
     void finish(){
