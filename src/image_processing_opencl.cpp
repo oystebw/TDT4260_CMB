@@ -276,7 +276,7 @@ int main(int argc, char** argv){
     AccurateImage* imageAccurate2_large = blur.blur(imageAccurate, 8);
 
     blur.finish();
-    // calculate difference
+
     PPMImage* final_tiny = imageDifference(imageAccurate2_tiny, imageAccurate2_small);
     PPMImage* final_small = imageDifference(imageAccurate2_small, imageAccurate2_medium);
     PPMImage* final_medium = imageDifference(imageAccurate2_medium, imageAccurate2_large);
