@@ -174,8 +174,8 @@ public:
     AccurateImage* blur(AccurateImage* image, int size){
 
         std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
-        Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
-        Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
+        Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
+        Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
 
         events.emplace_back(make_pair("copy buffer to image", Event()));
 
