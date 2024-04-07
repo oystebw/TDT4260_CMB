@@ -14,13 +14,13 @@ __kernel void kernelHorizontal(__global const float* restrict in_image, __global
         vstore3(sum / (size + x + 1), y * width + x, out_image);
     }
 
-    for(int x = size + 1; x < height - size; x++) {
+    for(int x = size + 1; x < width - size; x++) {
         sum -= vload3(y * width + x - size - 1, in_image);
         sum += vload3(y * width + x + size, in_image);
         vstore3(sum / (2 * size + 1), y * width + x, out_image);
     }
 
-    for(int x = height - size; x < height; x++) {
+    for(int x = height - size; x < width; x++) {
         sum -= vload3(y * width + x - size - 1, in_image);
         vstore3(sum / (size + height - x), y * width + x, out_image);
     }
