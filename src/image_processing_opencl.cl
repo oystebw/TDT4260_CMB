@@ -1,12 +1,11 @@
 __kernel void kernelHorizontal(__global const float* restrict in_image, __global float* restrict out_image, const int width, const int size){
     const int y = get_global_id(0);
-    float3 sum = {0.0, 0.0, 0.0};
-    float4 temp;
+    float4 sum = {0.0, 0.0, 0.0, 0.0};
 
     for(int x = 0; x <= size; x++) {
-        temp = vload4(y * width + x, in_image);
-        sum += temp.xyz;
-        //sum += vload3(y * width + x, in_image);
+        // temp = vload4(y * width + x, in_image);
+        // sum += temp.xyz;
+        sum += vload3(y * width + x, in_image);
     }
 
     vstore3(sum / (size + 1), y * width + 0, out_image);
@@ -37,7 +36,7 @@ __kernel void kernelVertical(__global const float* restrict in_image, __global f
     for(int y = 0; y <= size; y++) {
         temp = vload4(y * width + x, in_image);
         sum += temp.xyz;
-        //sum += vload3(y * width + x, in_image);
+        // sum += vload3(y * width + x, in_image);
     }
 
     vstore3(sum / (size + 1), 0 * width + x, out_image);

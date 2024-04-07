@@ -19,7 +19,7 @@ using namespace std;
 using namespace cl;
 
 typedef struct {
-    float red,green,blue;
+    float red, green, blue, alpha;
 } AccuratePixel;
 
 typedef struct {
@@ -165,11 +165,7 @@ public:
         kernelVertical = Kernel(program, "kernelVertical");
     }
     AccurateImage* blur(AccurateImage* image, int size){
-        // perform blur operation
-
-        // allocate two buffers:
-        // use sizeof(AccuratePixel) instead of sizeof(float3) because sizeof(float3) = sizeof(float4)
-        // even though vload3 and vstore3 can operate on packed arrays
+ 
         std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
         Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
         Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, bufferSize);
