@@ -32,9 +32,12 @@ __kernel void kernelVertical(__global const float* restrict in_image, __global f
     const int width = get_global_size(0);
     const int x = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
+    float4 temp;
 
     for(int y = 0; y <= size; y++) {
-        sum += vload3(y * width + x, in_image);
+        temp = vload4(y * width + x, in_image);
+        sum += temp.xyz;
+        //sum += vload3(y * width + x, in_image);
     }
 
     vstore3(sum / (size + 1), 0 * width + x, out_image);
