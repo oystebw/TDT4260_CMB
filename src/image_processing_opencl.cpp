@@ -141,6 +141,14 @@ public:
         cerr << "Using device: " << default_device.getInfo<CL_DEVICE_NAME>() << "\n";
         device = default_device;
 
+
+        for(const auto& foundDevice : all_devices) {
+            if(foundDevice.getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU) {
+                device = foundDevice;
+                break;
+            }
+        }
+
         // create context
         context = Context({device});
 
