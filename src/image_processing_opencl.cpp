@@ -19,7 +19,7 @@ using namespace std;
 using namespace cl;
 
 typedef struct {
-    float red,green,blue;
+    float red, green, blue, alpha;
 } AccuratePixel;
 
 typedef struct {
