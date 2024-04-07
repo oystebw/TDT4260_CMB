@@ -1,5 +1,4 @@
 __kernel void kernelHorizontal(__global const float* restrict in_image, __global float* restrict out_image, const int width, const int size){
-    const int height = get_global_size(0);
     const int y = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
 
@@ -20,9 +19,9 @@ __kernel void kernelHorizontal(__global const float* restrict in_image, __global
         vstore3(sum / (2 * size + 1), y * width + x, out_image);
     }
 
-    for(int x = height - size; x < width; x++) {
+    for(int x = width - size; x < width; x++) {
         sum -= vload3(y * width + x - size - 1, in_image);
-        vstore3(sum / (size + height - x), y * width + x, out_image);
+        vstore3(sum / (size + width - x), y * width + x, out_image);
     }
 }
 
