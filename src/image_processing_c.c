@@ -32,7 +32,7 @@ AccurateImage* convertToAccurateImage(const PPMImage* image) {
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
-	#pragma GCC unroll 16
+	#pragma GCC unroll 8
 	for(int i = 0; i < size; i++) {
 		imageAccurate->data[i][0] = (float) image->data[i].red;
 		imageAccurate->data[i][1] = (float) image->data[i].green;
@@ -64,7 +64,7 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
 
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
-	#pragma GCC unroll 16
+	#pragma GCC unroll 8
     for(int i = 0; i < size; i++) {
 		imageOut->data[i].red = imageIn->data[i][0];
 		imageOut->data[i].green = imageIn->data[i][1];
@@ -78,9 +78,8 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 	const int width = image->x;
 	const int height = image->y;
 
-	#pragma GCC unroll 5
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma GCC unroll 16
+		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -108,7 +107,7 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 			
 		}
-		#pragma GCC unroll 16
+		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -148,7 +147,7 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 	imageOut->x = width;
 	imageOut->y = height;
-	#pragma GCC unroll 16
+	#pragma GCC unroll 8
 	for(int i = 0; i < size; i++) {
 		v4Accurate diffvec = imageInLarge->data[i] - imageInSmall->data[i];
 		float red = diffvec[0];
