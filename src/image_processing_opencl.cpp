@@ -187,7 +187,7 @@ public:
         }
         AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
         const int sizes[] = {2, 3, 5, 8};
-        #pragma omp parallel for
+
         for(int i = 0; i < 4; i++){
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
@@ -196,7 +196,6 @@ public:
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             results[i] = copyAccurateImage(image, true, false);
         }
-        #pragma omp barrier
         events.emplace_back(make_pair("map buffer in memory", Event()));
         for(int i = 3; i >= 0; i--){
             results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
