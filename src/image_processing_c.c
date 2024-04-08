@@ -83,56 +83,56 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 		#pragma GCC unroll 16
 		for(int y = 0; y < height; y++) {
 
-			v4Accurate sum;
+			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int x = 0; x <= size; x++) {
 				sum += image->data[y * width + x];
 			}
 
-			scratch[y * width + 0] = sum / (v4Accurate){size + 1};
+			scratch[y * width + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int x = 1; x <= size; x++) {
 				sum += image->data[y * width + x + size];
-				scratch[y * width + x] = sum / (v4Accurate){size + x + 1};
+				scratch[y * width + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
 				sum -= image->data[y * width + x - size - 1];
 				sum += image->data[y * width + x + size];
-				scratch[y * width + x] = sum / (v4Accurate){2 * size + 1};
+				scratch[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int x = width - size; x < width; x++) {
 				sum -= image->data[y * width + x - size - 1];
-				scratch[y * width + x] = sum / (v4Accurate){size + width - x};
+				scratch[y * width + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
 			
 		}
 		#pragma GCC unroll 16
 		for(int x = 0; x < width; x++) {
 
-			v4Accurate sum;
+			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; y++) {
 				sum += scratch[y * width + x];
 			}
 
-			image->data[0 * width + x] = sum / (v4Accurate){size + 1};
+			image->data[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int y = 1; y <= size; y++) {
 				sum += scratch[(y + size) * width + x];
-				image->data[y * width + x] = sum / (v4Accurate){y + size + 1};
+				image->data[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
 				sum -= scratch[(y - size - 1) * width + x];
 				sum += scratch[(y + size) * width + x];
-				image->data[y * width + x] = sum / (v4Accurate){2 * size + 1};
+				image->data[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int y = height - size; y < height; y++) {
 				sum -= scratch[(y - size - 1) * width + x];
-				image->data[y * width + x] = sum / (v4Accurate){size + height - y};
+				image->data[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
 		}
 	}
