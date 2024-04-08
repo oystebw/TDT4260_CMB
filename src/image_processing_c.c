@@ -83,7 +83,7 @@ void blurIteration(AccurateImage* image, const int size) {
 	v4Accurate (*data)   [width] = (void*) image->data;
   	v4Accurate (*buffer) [height] = (void*) scratch;
 	
-
+	#pragma GCC unroll 5
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
 		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
