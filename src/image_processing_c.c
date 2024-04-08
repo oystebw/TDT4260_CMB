@@ -160,12 +160,12 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 		float red = diffvec[0];
 		float green = diffvec[1];
 		float blue = diffvec[2];
-		red += 257.0 * (red < 0.0);
-		green += 257.0 * (green < 0.0);
-		blue += 257.0 * (blue < 0.0);
-		imageOut->data[i].red = red;
-		imageOut->data[i].green = green;
-		imageOut->data[i].blue = blue;
+
+		red = red < 0.0 ? red + 257.0 : red;
+		green = green < 0.0 ? green + 257.0 : green;
+		blue = blue < 0.0 ? blue + 257.0 : blue;
+
+		imageOut->data[i] = (PPMPixel){red, green, blue};
 	}
 	
 	return imageOut;
