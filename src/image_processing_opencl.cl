@@ -38,7 +38,7 @@ __kernel void kernelVertical(__global const float* restrict in_image, __global f
 
     for(int y = 1; y <= size; y++) {
         sum += vload3((y + size) * width + x, in_image);
-        vstore3(sum / (size + y + 1), y * width + x, out_image);
+        vstore3(sum / (y + size + 1), y * width + x, out_image);
     }
 
     for(int y = size + 1; y < height - size; y++) {
