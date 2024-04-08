@@ -195,9 +195,9 @@ public:
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             results[i] = copyAccurateImage(image, true, false);
-            events.emplace_back(make_pair("map buffer in memory", Event()));
-            
         }
+        #pragma omp barrier
+        events.emplace_back(make_pair("map buffer in memory", Event()));
         for(int i = 3; i >= 0; i--){
             results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         }
@@ -282,7 +282,7 @@ int main(int argc, char** argv){
     AccurateImage* imageAccurate = convertToAccurateImage(image);
 
     OpenClBlur blur;
-    AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
+    AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 8);
     images = blur.blur(imageAccurate);
     blur.finish();
 
