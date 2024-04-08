@@ -84,7 +84,7 @@ PPMImage* convertToPPPMImage(AccurateImage *imageIn) {
 
 // Perform the final step, and return it as ppm.
 PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLarge) {	
-    const int width = imageInSmall->x;
+	const int width = imageInSmall->x;
 	const int height = imageInSmall->y;
 	const int size = width * height;
 
@@ -93,16 +93,17 @@ PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLar
 
 	imageOut->x = width;
 	imageOut->y = height;
+	#pragma GCC unroll 8
 	for(int i = 0; i < size; i++) {
 		float red = imageInLarge->data[i].red - imageInSmall->data[i].red;
-		float green = imageInLarge->data[i].green - imageInSmall->data[i].green;
-		float blue = imageInLarge->data[i].blue - imageInSmall->data[i].blue;
-		red += 257.0 * (red < 0.0);
-		green += 257.0 * (green < 0.0);
-		blue += 257.0 * (blue < 0.0);
-		imageOut->data[i].red = red;
-		imageOut->data[i].green = green;
-		imageOut->data[i].blue = blue;
+        float green = imageInLarge->data[i].green - imageInSmall->data[i].green;
+        float blue = imageInLarge->data[i].blue - imageInSmall->data[i].blue;
+
+		red = red < 0.0 ? red + 257.0 : red;
+		green = green < 0.0 ? green + 257.0 : green;
+		blue = blue < 0.0 ? blue + 257.0 : blue;
+
+		imageOut->data[i] = (PPMPixel){red, green, blue};
 	}
 	
 	return imageOut;
@@ -197,9 +198,9 @@ public:
     void finish(){
         // finish execution and print events
         queue.finish();
-        for(auto [s, e]: events){
-            printEvent(s, e);
-        }
+        // for(auto [s, e]: events){
+        //     printEvent(s, e);
+        // }
         events.clear();
     }
 
