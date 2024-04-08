@@ -174,26 +174,29 @@ public:
         kernelHorizontal = Kernel(program, "kernelHorizontal");
         kernelVertical = Kernel(program, "kernelVertical");
     }
-    AccurateImage* blur(AccurateImage* image, int size){
+    AccurateImage** blur(AccurateImage* image){
 
         std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
-        Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
-        Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
-
-        events.emplace_back(make_pair("copy buffer to image", Event()));
-
-        queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize, image->data, nullptr, &events.back().second);
-
-        for(int i = 0; i < 5; i++){
-            blurIteration(image, buffer1, buffer2, size);
+        Buffer buffers[8];
+        for(int i = 0; i < 8; i++){
+            buffers[i] = Buffer(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
         }
-
-        AccurateImage* result = copyAccurateImage(image, true, false);
-
-        events.emplace_back(make_pair("map buffer in memory", Event()));
-
-        result->data = (AccuratePixel*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
-        return result;
+        events.emplace_back(make_pair("copy buffer to image", Event()));
+        for(int i = 0; i < 8; i += 2){
+            queue.enqueueWriteBuffer(buffers[i], false, 0, bufferSize, image->data, nullptr, &events.back().second);
+        }
+        AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
+        const int sizes[] = {2, 3, 5, 8};
+        #pragma omp parallel for num_threads(4)
+        for(int i = 0; i < 4; i++){
+            for(int j = 0; j < 5; j++){
+                blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            }
+            results[i] = copyAccurateImage(image, true, false);
+            events.emplace_back(make_pair("map buffer in memory", Event()));
+            results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i * 2], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        }
+        return results;
     }
     void finish(){
         // finish execution and print events
@@ -274,12 +277,8 @@ int main(int argc, char** argv){
     AccurateImage* imageAccurate = convertToAccurateImage(image);
 
     OpenClBlur blur;
-    const int sizes[] = {2, 3, 5, 8};
-    AccurateImage* images[4];
-    #pragma omp parallel for num_threads(4)
-    for(int i = 0; i < 4; i++){
-        images[i] = blur.blur(imageAccurate, sizes[i]);
-    }
+    AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
+    images = blur.blur(imageAccurate);
     blur.finish();
 
     PPMImage* final_images[3];

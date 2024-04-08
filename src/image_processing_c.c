@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
 	PPMImage* imagesPPM[3];
 	const int sizes[4] = {2, 3, 5, 8};
 
-	#pragma omp parallel for simd num_threads(4)
+	#pragma omp parallel for num_threads(4)
 	for(int i = 0; i < 4; i++) {
 		images[i] = blurIteration(image, sizes[i]);
 	}
