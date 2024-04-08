@@ -73,13 +73,15 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     return imageOut;
 }
 
-void blurIteration(AccurateImage* image, const int size) {
+AccurateImage* blurIteration(PPMImage* image, const int size) {
 	const int width = image->x;
 	const int height = image->y;
 	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
+	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
+	imageOut = convertToAccurateImage(image);
 
 	// Transpose to be more cache / access friendly
-	v4Accurate (*data)   [width] = (void*) image->data;
+	v4Accurate (*data)   [width] = (void*) imageOut->data;
   	v4Accurate (*buffer) [height] = (void*) scratch;
 	
 	#pragma GCC unroll 5
@@ -141,6 +143,7 @@ void blurIteration(AccurateImage* image, const int size) {
 		}
 	}
 	free(scratch);
+	return imageOut;
 }
 
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
@@ -179,23 +182,17 @@ int main(int argc, char** argv) {
     } else {
         image = readStreamPPM(stdin);
     }
-	
-	AccurateImage* imageAccurate1_tiny = convertToAccurateImage(image);
-	AccurateImage* imageAccurate1_small = copyAccurateImage(imageAccurate1_tiny);
-	AccurateImage* imageAccurate1_medium = copyAccurateImage(imageAccurate1_tiny);
-	AccurateImage* imageAccurate1_large = copyAccurateImage(imageAccurate1_tiny);
 
-	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
+	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
+	PPMImage* imagesPPM[3];
 	const int sizes[4] = {2, 3, 5, 8};
 
-	#pragma omp parallel for simd num_threads(8)
+	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
-		blurIteration(images[i], sizes[i]);
+		images[i] = blurIteration(image, sizes[i]);
 	}
 
-	PPMImage* imagesPPM[3];
-
-	#pragma omp parallel for simd num_threads(8)
+	#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
