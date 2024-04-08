@@ -182,21 +182,23 @@ public:
             buffers[i] = Buffer(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
         }
         events.emplace_back(make_pair("copy buffer to image", Event()));
-        for(int i = 0; i < 8; i += 2){
+        for(int i = 0; i < 4; i++){
             queue.enqueueWriteBuffer(buffers[i], false, 0, bufferSize, image->data, nullptr, &events.back().second);
         }
         AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
         const int sizes[] = {2, 3, 5, 8};
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for(int i = 0; i < 4; i++){
-            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
-            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
-            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
-            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
-            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
+            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
+            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
+            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
+            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             results[i] = copyAccurateImage(image, true, false);
             events.emplace_back(make_pair("map buffer in memory", Event()));
-            results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i * 2], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        }
+        for(int i = 3; i >= 0; i--){
+            results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         }
         return results;
     }
