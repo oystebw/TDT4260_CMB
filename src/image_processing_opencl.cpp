@@ -189,9 +189,11 @@ public:
         const int sizes[] = {2, 3, 5, 8};
         #pragma omp parallel for
         for(int i = 0; i < 4; i++){
-            for(int j = 0; j < 5; j++){
-                blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
-            }
+            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
+            blurIteration(image, buffers[i * 2], buffers[i * 2 + 1], sizes[i]);
             results[i] = copyAccurateImage(image, true, false);
             events.emplace_back(make_pair("map buffer in memory", Event()));
             results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i * 2], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
