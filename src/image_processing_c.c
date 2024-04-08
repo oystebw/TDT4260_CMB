@@ -28,20 +28,21 @@ typedef struct {
 } AccurateImage;
 
 AccurateImage* convertToAccurateImage(const PPMImage* image) {
-	const int size = image->x * image->y;
+	const int width = image->x;
+	const int height = image->y;
+	const int size = width * height;
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
-	// #pragma GCC unroll 8
-	#pragma omp parallel for simd
+	#pragma GCC unroll 8
 	for(int i = 0; i < size; i++) {
 		PPMPixel pixel = image->data[i];
 		imageAccurate->data[i][0] = (float) pixel.red;
 		imageAccurate->data[i][1] = (float) pixel.green;
 		imageAccurate->data[i][2] = (float) pixel.blue;
 	}
-	imageAccurate->x = image->x;
-	imageAccurate->y = image->y;
+	imageAccurate->x = width;
+	imageAccurate->y = height;
 	
 	return imageAccurate;
 }
