@@ -92,25 +92,25 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int x = 0; x <= size; x++) {
-				sum += data[y][x];
+				sum += imageOut->data[y * width + x];
 			}
 
-			buffer[0][y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			scratch[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int x = 1; x <= size; x++) {
-				sum += data[y][x + size];
-				buffer[x][y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+				sum += imageOut->data[y * width + x + size];
+				scratch[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
-				sum -= data[y][x - size - 1];
-				sum += data[y][x + size];
-				buffer[x][y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+				sum -= imageOut->data[y * width + x - size - 1];
+				sum += imageOut->data[y * width + x + size];
+				scratch[x * height + y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int x = width - size; x < width; x++) {
-				sum -= data[y][x - size - 1];
-				buffer[x][y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+				sum -= imageOut->data[y * width + x - size - 1];
+				scratch[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
 			
 		}
@@ -120,25 +120,25 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; y++) {
-				sum += buffer[x][y];
+				sum += scratch[x * height + y];
 			}
 
-			data[0][x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			imageOut->data[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int y = 1; y <= size; y++) {
-				sum += buffer[x][(y + size)];
-				data[y][x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+				sum += scratch[x * height + y + size];
+				imageOut->data[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				sum -= buffer[x][y - size - 1];
-				sum += buffer[x][y + size];
-				data[y][x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+				sum -= scratch[x * height + y - size - 1];
+				sum += scratch[x * height + y + size];
+				imageOut->data[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int y = height - size; y < height; y++) {
-				sum -= buffer[x][y - size - 1];
-				data[y][x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+				sum -= scratch[x * height + y - size - 1];
+				imageOut->data[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
 		}
 	}
