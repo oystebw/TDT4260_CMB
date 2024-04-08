@@ -32,11 +32,13 @@ AccurateImage* convertToAccurateImage(const PPMImage* image) {
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
-	#pragma GCC unroll 8
+	// #pragma GCC unroll 8
+	#pragma omp parallel for simd
 	for(int i = 0; i < size; i++) {
-		imageAccurate->data[i][0] = (float) image->data[i].red;
-		imageAccurate->data[i][1] = (float) image->data[i].green;
-		imageAccurate->data[i][2] = (float) image->data[i].blue;
+		PPMPixel pixel = image->data[i];
+		imageAccurate->data[i][0] = (float) pixel.red;
+		imageAccurate->data[i][1] = (float) pixel.green;
+		imageAccurate->data[i][2] = (float) pixel.blue;
 	}
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
@@ -79,10 +81,6 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
 	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageOut = convertToAccurateImage(image);
-
-	// Transpose to be more cache / access friendly
-	v4Accurate (*data)   [width] = (void*) imageOut->data;
-  	v4Accurate (*buffer) [height] = (void*) scratch;
 	
 	#pragma GCC unroll 5
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
