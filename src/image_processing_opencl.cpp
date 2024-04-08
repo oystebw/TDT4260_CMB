@@ -187,7 +187,7 @@ public:
         }
         AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
         const int sizes[] = {2, 3, 5, 8};
-        // #pragma omp parallel for
+        #pragma omp parallel for
         for(int i = 0; i < 4; i++){
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
