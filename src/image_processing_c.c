@@ -189,14 +189,14 @@ int main(int argc, char** argv) {
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	const int sizes[4] = {2, 3, 5, 8};
 
-	#pragma omp parallel for simd num_threads(4)
+	//#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
 		blurIteration(images[i], sizes[i]);
 	}
 
 	PPMImage* imagesPPM[3];
 
-	#pragma omp parallel for simd num_threads(3)
+	//#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
