@@ -101,7 +101,7 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
-				__builtin_prefetch(data[y] + x + 32);
+				__builtin_prefetch((const void*)&data[y][x + 32]);
 				sum -= data[y][x - size - 1];
 				sum += data[y][x + size];
 				buffer[x][y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
@@ -130,7 +130,7 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				__builtin_prefetch(buffer[x] + y + 32);
+				__builtin_prefetch((const void*)&buffer[x][y + 32]);
 				sum -= buffer[x][y - size - 1];
 				sum += buffer[x][y + size];
 				data[y][x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
