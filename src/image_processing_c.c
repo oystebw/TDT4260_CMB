@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct {
      int x, y;
-     v4Accurate* data;
+     float16x4_t* data;
 } AccurateImage;
 
 AccurateImage* convertToAccurateImage(const PPMImage* image) {
