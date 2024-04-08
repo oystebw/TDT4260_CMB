@@ -74,9 +74,10 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     return imageOut;
 }
 
-void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
+void blurIteration(AccurateImage* image, const int size) {
 	const int width = image->x;
 	const int height = image->y;
+	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
 
 	// Transpose to be more cache / access friendly
 	v4Accurate (*data)   [width] = (void*) image->data;
@@ -101,7 +102,6 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
-				__builtin_prefetch((const void*)&data[y][x + 32]);
 				sum -= data[y][x - size - 1];
 				sum += data[y][x + size];
 				buffer[x][y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
@@ -130,7 +130,6 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				__builtin_prefetch((const void*)&buffer[x][y + 32]);
 				sum -= buffer[x][y - size - 1];
 				sum += buffer[x][y + size];
 				data[y][x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
@@ -142,6 +141,8 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 		}
 	}
+
+	free(scratch);
 }
 
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
@@ -185,17 +186,13 @@ int main(int argc, char** argv) {
 	AccurateImage* imageAccurate1_small = copyAccurateImage(imageAccurate1_tiny);
 	AccurateImage* imageAccurate1_medium = copyAccurateImage(imageAccurate1_tiny);
 	AccurateImage* imageAccurate1_large = copyAccurateImage(imageAccurate1_tiny);
-	v4Accurate* scratch[4] = {(v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate)),
-							  (v4Accurate*)malloc(image->x * image->y * sizeof(v4Accurate))};
 
 	AccurateImage* images[4] = {imageAccurate1_tiny, imageAccurate1_small, imageAccurate1_medium, imageAccurate1_large};
 	const int sizes[4] = {2, 3, 5, 8};
 
 	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
-		blurIteration(images[i], scratch[i], sizes[i]);
+		blurIteration(images[i], sizes[i]);
 	}
 
 	PPMImage* imagesPPM[3];
