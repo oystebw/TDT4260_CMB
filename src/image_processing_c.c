@@ -7,8 +7,6 @@
 #include "ppm.h"
 
 #define BLUR_ITERATIONS 5
-#define width 1920
-#define height 1200
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 
@@ -30,8 +28,7 @@ typedef struct {
 } AccurateImage;
 
 AccurateImage* convertToAccurateImage(const PPMImage* image) {
-	// const int size = image->x * image->y;
-	const int size = width * height;
+	const int size = image->x * image->y;
 
 	AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
@@ -48,27 +45,25 @@ AccurateImage* convertToAccurateImage(const PPMImage* image) {
 }
 
 AccurateImage* copyAccurateImage(const AccurateImage* imageIn) {
-	// const int size = imageIn->x * imageIn->y;
-	const int size = width * height;
+	const int size = imageIn->x * imageIn->y;
 	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageOut->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
 	
 	memcpy(imageOut->data, imageIn->data, size * sizeof(v4Accurate));
 
-	imageOut->x = width;
-	imageOut->y = height;
+	imageOut->x = imageIn->x;
+	imageOut->y = imageIn->y;
 	return imageOut;
 }
 
 PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
-    // const int size = imageIn->x * imageIn->y;
-	const int size = width * height;
+    const int size = imageIn->x * imageIn->y;
 	
 	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
     imageOut->data = (PPMPixel*)malloc(size * sizeof(PPMPixel));
 
-    imageOut->x = width;
-    imageOut->y = height;
+    imageOut->x = imageIn->x;
+    imageOut->y = imageIn->y;
 	#pragma GCC unroll 8
     for(int i = 0; i < size; i++) {
 		imageOut->data[i].red = imageIn->data[i][0];
@@ -79,8 +74,8 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
 }
 
 AccurateImage* blurIteration(PPMImage* image, const int size) {
-	// const int width = image->x;
-	// const int height = image->y;
+	const int width = image->x;
+	const int height = image->y;
 	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
 	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageOut = convertToAccurateImage(image);
@@ -152,8 +147,8 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 }
 
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
-	// const int width = imageInSmall->x;
-	// const int height = imageInSmall->y;
+	const int width = imageInSmall->x;
+	const int height = imageInSmall->y;
 	const int size = width * height;
 
 	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
