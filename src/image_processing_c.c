@@ -1,6 +1,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <emmintrin.h>
 
 #include <omp.h>
 
@@ -77,8 +78,9 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 	const int width = image->x;
 	const int height = image->y;
 
+	// Transpose to be more cache / access friendly
 	v4Accurate (*data)   [width] = (void*) image->data;
-  	v4Accurate (*buffer) [height] = (void*) scratch; // Transposed	
+  	v4Accurate (*buffer) [height] = (void*) scratch;
 	
 
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
@@ -99,6 +101,7 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
+				_mm_prefetch((const char*) &data[y][x + size + 4], 1);
 				sum -= data[y][x - size - 1];
 				sum += data[y][x + size];
 				buffer[x][y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
@@ -127,6 +130,7 @@ void blurIteration(AccurateImage* image, v4Accurate* scratch, const int size) {
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
+				_mm_prefetch((const char*) &buffer[x][y + size + 4], 1);
 				sum -= buffer[x][y - size - 1];
 				sum += buffer[x][y + size];
 				data[y][x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
