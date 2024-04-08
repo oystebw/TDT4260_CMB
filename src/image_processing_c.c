@@ -1,7 +1,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#include <emmintrin.h>
+#include <arm_neon.h>
 
 #include <omp.h>
 
