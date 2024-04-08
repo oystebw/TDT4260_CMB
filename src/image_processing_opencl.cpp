@@ -274,7 +274,7 @@ int main(int argc, char** argv){
     OpenClBlur blur;
     const int sizes[] = {2, 3, 5, 8};
     AccurateImage* images[4];
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for
     for(int i = 0; i < 4; i++){
         images[i] = blur.blur(imageAccurate, sizes[i]);
     }
