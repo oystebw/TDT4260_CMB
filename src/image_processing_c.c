@@ -102,13 +102,13 @@ void blurIteration(AccurateImage* image, const int size) {
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
-				sum = vaddq_f32(-sum, data[y][x - size - 1]);
+				sum = vsubq_f32(sum, data[y][x - size - 1]);
 				sum = vaddq_f32(sum, data[y][x + size]);
 				buffer[x][y] = vmulq_f32(sum, vrecpeq_f32((float32x4_t){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1}));
 			}
 
 			for(int x = width - size; x < width; x++) {
-				sum = vaddq_f32(-sum, data[y][x - size - 1]);
+				sum = vsubq_f32(sum, data[y][x - size - 1]);
 				buffer[x][y] = vmulq_f32(sum, vrecpeq_f32((float32x4_t){size + width - x, size + width - x, size + width - x, size + width - x}));
 			}
 			
@@ -130,13 +130,13 @@ void blurIteration(AccurateImage* image, const int size) {
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				sum = vaddq_f32(-sum, buffer[x][y - size - 1]);
+				sum = vsubq_f32(sum, buffer[x][y - size - 1]);
 				sum = vaddq_f32(sum, buffer[x][y + size]);
 				data[y][x] = vmulq_f32(sum, vrecpeq_f32((float32x4_t){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1}));
 			}
 
 			for(int y = height - size; y < height; y++) {
-				sum = vaddq_f32(-sum, buffer[x][y - size - 1]);
+				sum = vsubq_f32(sum, buffer[x][y - size - 1]);
 				data[y][x] = vmulq_f32(sum, vrecpeq_f32((float32x4_t){size + height - y, size + height - y, size + height - y, size + height - y}));
 			}
 		}
