@@ -196,6 +196,7 @@ public:
             blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
             results[i] = copyAccurateImage(image, true, false);
             events.emplace_back(make_pair("map buffer in memory", Event()));
+            
         }
         for(int i = 3; i >= 0; i--){
             results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
