@@ -83,14 +83,11 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 	AccurateImage* real = convertToAccurateImage(image);
 	v4Accurate* scratch;
 	v4Accurate* imageOut;
-	v4Accurate* images[2] = {real->data, fake};
 	
 	v4Accurate sum;
-	#pragma GCC unroll 5
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		(i % 2) ? (scratch = images[0]) : (scratch = images[1]);
-		(i % 2) ? (imageOut = images[1]) : (imageOut = images[0]);	
-		#pragma GCC unroll 8
+		(i % 2) ? (scratch = real->data) : (scratch = fake);
+		(i % 2) ? (imageOut = fake) : (imageOut = real->data);	
 		for(int y = 0; y < height; y++) {
 			const int yWidth = y * width;
 
@@ -120,17 +117,17 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 				scratch[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
 		}
-	}
+	//}
 
-	#pragma GCC unroll 5
-	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		(i % 2) ? (scratch = images[0]) : (scratch = images[1]);
-		(i % 2) ? (imageOut = images[1]) : (imageOut = images[0]);	
-		#pragma GCC unroll 8
+	//for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		// (i % 2) ? (scratch = real->data) : (scratch = fake);
+		// (i % 2) ? (imageOut = fake) : (imageOut = real->data);	
 		for(int x = 0; x < width; x++) {
 			const int xHeight = x * height;
 
-			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+			sum[0] = 0.0;
+			sum[1] = 0.0;
+			sum[2] = 0.0;
 
 			for(int y = 0; y <= size; y++) {
 				sum += scratch[y * width + x];
@@ -156,6 +153,7 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 		}
 	}
 	//free(scratch);
+	real->data = fake;
 	return real;
 }
 
@@ -200,7 +198,7 @@ int main(int argc, char** argv) {
 	PPMImage* imagesPPM[3];
 	const int sizes[4] = {2, 3, 5, 8};
 
-	#pragma omp parallel for num_threads(4)
+	//#pragma omp parallel for num_threads(4)
 	for(int i = 0; i < 4; i++) {
 		images[i] = blurIteration(image, sizes[i]);
 	}
