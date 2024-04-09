@@ -81,13 +81,13 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 	const int height = image->y;
 	v4Accurate* fake = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
 	AccurateImage* real = convertToAccurateImage(image);
-	v4Accurate* scratch;
-	v4Accurate* imageOut;
+	v4Accurate* scratch = fake;
+	v4Accurate* imageOut = real->data;
 	
 	v4Accurate sum;
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		(i % 2) ? (scratch = real->data) : (scratch = fake);
-		(i % 2) ? (imageOut = fake) : (imageOut = real->data);	
+		// (i % 2) ? (scratch = real->data) : (scratch = fake);
+		// (i % 2) ? (imageOut = fake) : (imageOut = real->data);	
 		for(int y = 0; y < height; y++) {
 			const int yWidth = y * width;
 
@@ -153,7 +153,6 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 		}
 	}
 	//free(scratch);
-	real->data = fake;
 	return real;
 }
 
