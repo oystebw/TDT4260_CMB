@@ -3,7 +3,7 @@ __kernel void kernelHorizontal(__global const float* test, __global float* restr
     const int y = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
     
-    __global const float* in_image = test + 1;
+    __global const float* in_image = test + 4;
 
     for(int x = 0; x <= size; x++) {
         sum += vload3(y * width + x, in_image);
