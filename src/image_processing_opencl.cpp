@@ -197,6 +197,7 @@ public:
         blurIteration(image, buffer1, buffer2);
         blurIteration(image, buffer1, buffer2);
         blurIteration(image, buffer1, buffer2);
+        
 
         for(int i = 0; i < 4; i++){    
             results[i] = copyAccurateImage(image, true, false);
