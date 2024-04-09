@@ -79,13 +79,17 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
 AccurateImage* blurIteration(PPMImage* image, const int size) {
 	const int width = image->x;
 	const int height = image->y;
-	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
-	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
-	imageOut = convertToAccurateImage(image);
+	v4Accurate* fake = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
+	AccurateImage* real = convertToAccurateImage(image);
+	v4Accurate* scratch;
+	v4Accurate* imageOut;
+	v4Accurate* images[2] = {real->data, fake};
 	
 	v4Accurate sum;
 	#pragma GCC unroll 5
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		(i % 2) ? (scratch = images[0]) : (scratch = images[1]);
+		(i % 2) ? (imageOut = images[1]) : (imageOut = images[0]);	
 		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 			const int yWidth = y * width;
@@ -95,28 +99,33 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			sum[2] = 0.0;
 
 			for(int x = 0; x <= size; x++) {
-				sum += imageOut->data[yWidth + x];
+				sum += imageOut[yWidth + x];
 			}
 
-			scratch[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			scratch[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int x = 1; x <= size; x++) {
-				sum += imageOut->data[yWidth + x + size];
-				scratch[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+				sum += imageOut[yWidth + x + size];
+				scratch[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
-				sum -= imageOut->data[yWidth + x - size - 1];
-				sum += imageOut->data[yWidth + x + size];
-				scratch[x * height + y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+				sum -= imageOut[yWidth + x - size - 1];
+				sum += imageOut[yWidth + x + size];
+				scratch[yWidth + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int x = width - size; x < width; x++) {
-				sum -= imageOut->data[yWidth + x - size - 1];
-				scratch[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+				sum -= imageOut[yWidth + x - size - 1];
+				scratch[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
-			
 		}
+	}
+
+	#pragma GCC unroll 5
+	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+		(i % 2) ? (scratch = images[0]) : (scratch = images[1]);
+		(i % 2) ? (imageOut = images[1]) : (imageOut = images[0]);	
 		#pragma GCC unroll 8
 		for(int x = 0; x < width; x++) {
 			const int xHeight = x * height;
@@ -124,30 +133,30 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; y++) {
-				sum += scratch[xHeight + y];
+				sum += scratch[y * width + x];
 			}
 
-			imageOut->data[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			imageOut[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int y = 1; y <= size; y++) {
-				sum += scratch[xHeight + y + size];
-				imageOut->data[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+				sum += scratch[y * width + x + size];
+				imageOut[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				sum -= scratch[xHeight + y - size - 1];
-				sum += scratch[xHeight + y + size];
-				imageOut->data[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+				sum -= scratch[y * width + x - size - 1];
+				sum += scratch[y * width + x + size];
+				imageOut[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int y = height - size; y < height; y++) {
-				sum -= scratch[xHeight + y - size - 1];
-				imageOut->data[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+				sum -= scratch[y * width + x - size - 1];
+				imageOut[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
 		}
 	}
 	//free(scratch);
-	return imageOut;
+	return real;
 }
 
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
