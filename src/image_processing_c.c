@@ -146,7 +146,7 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			}
 		}
 	}
-	free(scratch);
+	//free(scratch);
 	return imageOut;
 }
 
