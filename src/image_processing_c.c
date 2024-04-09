@@ -83,8 +83,8 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
 	imageOut = convertToAccurateImage(image);
 	
-	#pragma GCC unroll 5
-	for(int i = 0; i < BLUR_ITERATIONS; i++) {
+	#pragma GCC unroll 4
+	for(int i = 0; i < 4; i++) {
 		#pragma GCC unroll 8
 		for(int y = 0; y < height; y++) {
 
