@@ -79,10 +79,10 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
 AccurateImage* blurIteration(PPMImage* image, const int size) {
 	const int width = image->x;
 	const int height = image->y;
-	v4Accurate* fake = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
+	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
 	AccurateImage* real = convertToAccurateImage(image);
-	v4Accurate* scratch = fake;
-	v4Accurate* imageOut = real->data;
+	v4Accurate* imageOut = (v4Accurate*)real->data;
+
 	
 	v4Accurate sum;
 	for(int i = 0; i < BLUR_ITERATIONS; i++) {
@@ -141,19 +141,18 @@ AccurateImage* blurIteration(PPMImage* image, const int size) {
 			}
 
 			for(int y = size + 1; y < height - size; y++) {
-				sum -= scratch[y * width + x - size - 1];
-				sum += scratch[y * width + x + size];
+				sum -= scratch[(y - size - 1) * width + x];
+				sum += scratch[(y + size) * width + x];
 				imageOut[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 			}
 
 			for(int y = height - size; y < height; y++) {
-				sum -= scratch[y * width + x - size - 1];
+				sum -= scratch[(y - size - 1) * width + x];
 				imageOut[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
 		}
 	}
 	//free(scratch);
-	real->data = scratch;
 	return real;
 }
 
