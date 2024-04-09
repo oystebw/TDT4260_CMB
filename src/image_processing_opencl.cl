@@ -3,27 +3,27 @@ __kernel void kernelHorizontal(__global const float* restrict test, __global flo
     const int y = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
 
-    __global const float* restrict in_image = test + y * width * sizeof(float3);
+    __global const float* restrict in_image = test + y * width;
 
     for(int x = 0; x <= size; x++) {
-        sum += vload3(y * width + x, in_image);
+        sum += vload3(x, in_image);
     }
 
     vstore3(sum / (size + 1), y + 0 * height, out_image);
 
     for(int x = 1; x <= size; x++) {
-        sum += vload3(y * width + x + size, in_image);
+        sum += vload3(x + size, in_image);
         vstore3(sum / (size + x + 1), y + x * height, out_image);
     }
 
     for(int x = size + 1; x < width - size; x++) {
-        sum -= vload3(y * width + x - size - 1, in_image);
-        sum += vload3(y * width + x + size, in_image);
+        sum -= vload3(x - size - 1, in_image);
+        sum += vload3(x + size, in_image);
         vstore3(sum / ((size << 1) + 1), y + x * height, out_image);
     }
 
     for(int x = width - size; x < width; x++) {
-        sum -= vload3(y * width + x - size - 1, in_image);
+        sum -= vload3(x - size - 1, in_image);
         vstore3(sum / (size + width - x), y + x * height, out_image);
     }
 }
