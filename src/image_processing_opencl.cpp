@@ -192,12 +192,9 @@ public:
 
         AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
 
-        blurIteration(image, buffer1, buffer2);
-        blurIteration(image, buffer1, buffer2);
-        blurIteration(image, buffer1, buffer2);
-        blurIteration(image, buffer1, buffer2);
-        blurIteration(image, buffer1, buffer2);
-        
+        for(int i = 0; i < 5; i++){
+            blurIteration(image, buffer1, buffer2);
+        }
 
         for(int i = 0; i < 4; i++){    
             results[i] = copyAccurateImage(image, true, false);
