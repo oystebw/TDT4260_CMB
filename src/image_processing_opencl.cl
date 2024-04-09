@@ -1,5 +1,5 @@
 __kernel void kernelHorizontal(__global const float* in_image_raw, __global float* out_image_raw, const int width, const int height){
-    const int y = get_global_id(0);
+    int y = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
 
     int size;
@@ -11,16 +11,19 @@ __kernel void kernelHorizontal(__global const float* in_image_raw, __global floa
         out_image = out_image_raw;
     }
     else if(y < height * 2) {
+        y -= height;
         size = 3;
         in_image = in_image_raw + width * height * 3;
         out_image = out_image_raw + width * height * 3;
     }
     else if(y < height * 3) {
+        y -= height * 2;
         size = 5;
         in_image = in_image_raw + width * height * 2 * 3;
         out_image = out_image_raw + width * height * 2 * 3;
     }
     else {
+        y -= height * 3;
         size = 8;
         in_image = in_image_raw + width * height * 3 * 3;
         out_image = out_image_raw + width * height * 3 * 3;
@@ -50,7 +53,7 @@ __kernel void kernelHorizontal(__global const float* in_image_raw, __global floa
 }
 
 __kernel void kernelVertical(__global const float* in_image_raw, __global float* out_image_raw, const int width, const int height){
-    const int x = get_global_id(0);
+    int x = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
 
     int size;
@@ -62,16 +65,19 @@ __kernel void kernelVertical(__global const float* in_image_raw, __global float*
         out_image = out_image_raw;
     }
     else if(x < width * 2) {
+        x -= width;
         size = 3;
         in_image = in_image_raw + width * height * 3;
         out_image = out_image_raw + width * height * 3;
     }
     else if(x < width * 3) {
+        x -= width * 2;
         size = 5;
         in_image = in_image_raw + width * height * 2 * 3;
         out_image = out_image_raw + width * height * 2 * 3;
     }
     else {
+        x -= width * 3;
         size = 8;
         in_image = in_image_raw + width * height * 3 * 3;
         out_image = out_image_raw + width * height * 3 * 3;
