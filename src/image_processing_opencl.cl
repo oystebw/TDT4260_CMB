@@ -28,30 +28,32 @@ __kernel void kernelHorizontal(__global const float* restrict test, __global flo
     }
 }
 
-__kernel void kernelVertical(__global const float* restrict in_image, __global float* restrict out_image, const int height, const int size){
+__kernel void kernelVertical(__global const float* restrict test, __global float* restrict out_image, const int height, const int size){
     const int width = get_global_size(0);
     const int x = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
 
+    __global const float* restrict in_image = test + x * height;
+
     for(int y = 0; y <= size; y++) {
-        sum += vload3(y + x * height, in_image);
+        sum += vload3(y, in_image);
     }
 
     vstore3(sum / (size + 1), 0 * width + x, out_image);
 
     for(int y = 1; y <= size; y++) {
-        sum += vload3((y + size) + x * height, in_image);
+        sum += vload3((y + size), in_image);
         vstore3(sum / (y + size + 1), y * width + x, out_image);
     }
 
     for(int y = size + 1; y < height - size; y++) {
-        sum -= vload3((y - size - 1) + x * height, in_image);
-        sum += vload3((y + size) + x * height, in_image);
+        sum -= vload3((y - size - 1), in_image);
+        sum += vload3((y + size), in_image);
         vstore3(sum / ((size << 1) + 1), y * width + x, out_image);
     }
 
     for(int y = height - size; y < height; y++) {
-        sum -= vload3((y - size - 1) + x * height, in_image);
+        sum -= vload3((y - size - 1), in_image);
         vstore3(sum / (size + height - y), y * width + x, out_image);
     }
 }
