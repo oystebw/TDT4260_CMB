@@ -1,9 +1,30 @@
-__kernel void kernelHorizontal(__global const float* test, __global float* restrict out_image, const int width, const int size){
-    const int height = get_global_size(0);
+__kernel void kernelHorizontal(__global const float* in_image_raw, __global float* out_image_raw, const int width, const int height){
     const int y = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
-    
-    __global const float* in_image = test + 3;
+
+    int size;
+    __global const float* in_image;
+    __global float* out_image;
+    if(y < height) {
+        size = 2;
+        in_image = in_image_raw;
+        out_image = out_image_raw;
+    }
+    else if(y < height * 2) {
+        size = 3;
+        in_image = in_image_raw + width * height * 3;
+        out_image = out_image_raw + width * height * 3;
+    }
+    else if(y < height * 3) {
+        size = 5;
+        in_image = in_image_raw + width * height * 2 * 3;
+        out_image = out_image_raw + width * height * 2 * 3;
+    }
+    else {
+        size = 8;
+        in_image = in_image_raw + width * height * 3 * 3;
+        out_image = out_image_raw + width * height * 3 * 3;
+    }
 
     for(int x = 0; x <= size; x++) {
         sum += vload3(y * width + x, in_image);
@@ -28,10 +49,33 @@ __kernel void kernelHorizontal(__global const float* test, __global float* restr
     }
 }
 
-__kernel void kernelVertical(__global const float* restrict in_image, __global float* restrict out_image, const int height, const int size){
-    const int width = get_global_size(0);
+__kernel void kernelVertical(__global const float* in_image_raw, __global float* out_image_raw, const int width, const int height){
     const int x = get_global_id(0);
     float3 sum = {0.0, 0.0, 0.0};
+
+    int size;
+    __global const float* in_image;
+    __global float* out_image;
+    if(x < width) {
+        size = 2;
+        in_image = in_image_raw;
+        out_image = out_image_raw;
+    }
+    else if(x < width * 2) {
+        size = 3;
+        in_image = in_image_raw + width * height * 3;
+        out_image = out_image_raw + width * height * 3;
+    }
+    else if(x < width * 3) {
+        size = 5;
+        in_image = in_image_raw + width * height * 2 * 3;
+        out_image = out_image_raw + width * height * 2 * 3;
+    }
+    else {
+        size = 8;
+        in_image = in_image_raw + width * height * 3 * 3;
+        out_image = out_image_raw + width * height * 3 * 3;
+    }
 
     for(int y = 0; y <= size; y++) {
         sum += vload3(y + x * height, in_image);

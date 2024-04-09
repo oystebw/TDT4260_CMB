@@ -177,29 +177,38 @@ public:
     AccurateImage** blur(AccurateImage* image){
 
         std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
-        Buffer buffers[8];
-        for(int i = 0; i < 8; i++){
-            buffers[i] = Buffer(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
-        }
-        events.emplace_back(make_pair("copy buffer to image", Event()));
-        for(int i = 0; i < 4; i++){
-            queue.enqueueWriteBuffer(buffers[i], false, 0, bufferSize, image->data, nullptr, &events.back().second);
-        }
-        AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
-        const int sizes[] = {2, 3, 5, 8};
+        const int size = image->x * image->y;
 
+        AccuratePixel* copies = (AccuratePixel*)malloc(4 * bufferSize);
         for(int i = 0; i < 4; i++){
-            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
-            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
-            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
-            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
-            blurIteration(image, buffers[i], buffers[i + 4], sizes[i]);
+            memcpy(copies + i * size, image->data, bufferSize);
+        }
+
+        Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize * 4);
+        Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize * 4);
+
+        events.emplace_back(make_pair("copy buffer to image", Event()));
+        queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize * 4, copies, nullptr, &events.back().second);
+
+        AccurateImage** results = (AccurateImage**)malloc(4 * sizeof(AccurateImage*));
+
+        blurIteration(image, buffer1, buffer2);
+        blurIteration(image, buffer1, buffer2);
+        blurIteration(image, buffer1, buffer2);
+        blurIteration(image, buffer1, buffer2);
+        blurIteration(image, buffer1, buffer2);
+
+        for(int i = 0; i < 4; i++){    
             results[i] = copyAccurateImage(image, true, false);
         }
+
         events.emplace_back(make_pair("map buffer in memory", Event()));
-        for(int i = 3; i >= 0; i--){
-            results[i]->data = (AccuratePixel*)queue.enqueueMapBuffer(buffers[i], CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        copies = (AccuratePixel*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        
+        for(int i = 0; i < 4; i++){
+            results[i]->data = copies + i * size;
         }
+
         return results;
     }
     void finish(){
@@ -232,7 +241,7 @@ private:
         cerr << "run time: " << end-start << "ns" << endl;
         cerr << "total time: " << end-queued << "ns" << endl;
     }
-    void blurIteration(AccurateImage* image, Buffer& src, Buffer& dst, cl_int size){
+    void blurIteration(AccurateImage* image, Buffer& src, Buffer& dst){
 
         // create Event for profiling
         events.emplace_back(make_pair("kernelHorizontal", Event()));
@@ -240,12 +249,12 @@ private:
         kernelHorizontal.setArg(0, src);
         kernelHorizontal.setArg(1, dst);
         kernelHorizontal.setArg(2, image->x);
-        kernelHorizontal.setArg(3, size);
+        kernelHorizontal.setArg(3, image->y);
         // call 2D kernel
         queue.enqueueNDRangeKernel(
                 kernelHorizontal, // kernel to queue
                 NullRange, // use no offset
-                NDRange(image->y), // 1D kernel
+                NDRange(4 * image->y), // 1D kernel
                 NullRange, // use no local range
                 nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
                 &events.back().second // Event to use for profiling
@@ -255,13 +264,13 @@ private:
         // set call arguments
         kernelVertical.setArg(0, dst);
         kernelVertical.setArg(1, src);
-        kernelVertical.setArg(2, image->y);
-        kernelVertical.setArg(3, size);
+        kernelVertical.setArg(2, image->x);
+        kernelVertical.setArg(3, image->y);
         // call 2D kernel
         queue.enqueueNDRangeKernel(
                 kernelVertical, // kernel to queue
                 NullRange, // use no offset
-                NDRange(image->x), // 1D kernel
+                NDRange(4 * image->x), // 1D kernel
                 NullRange, // use no local range
                 nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
                 &events.back().second // Event to use for profiling
