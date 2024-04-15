@@ -208,8 +208,13 @@ int main(int argc, char** argv) {
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-			blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
+		}
 
+		for(int offset = 0; offset < 8; offset ++) {
+			blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
+		}
+
+		for(int offset = 0; offset < 8; offset ++) {
 			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
