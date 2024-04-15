@@ -208,18 +208,20 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 	imageOut->x = width;
 	imageOut->y = height;
-	#pragma GCC unroll 8
-	for(int i = 0; i < size; i++) {
-		v4Accurate diffvec = imageInLarge->data[i] - imageInSmall->data[i];
-		float red = diffvec[0];
-		float green = diffvec[1];
-		float blue = diffvec[2];
+	for(int x = 0; x < width; x++) {
+		const int xHeight = x * height;
+		for(int y = 0; y < height; y++) {
+			v4Accurate diffvec = imageInLarge->data[xHeight + y] - imageInSmall->data[xHeight + y];
+			float red = diffvec[0];
+			float green = diffvec[1];
+			float blue = diffvec[2];
 
-		red = red < 0.0 ? red + 257.0 : red;
-		green = green < 0.0 ? green + 257.0 : green;
-		blue = blue < 0.0 ? blue + 257.0 : blue;
+			red = red < 0.0 ? red + 257.0 : red;
+			green = green < 0.0 ? green + 257.0 : green;
+			blue = blue < 0.0 ? blue + 257.0 : blue;
 
-		imageOut->data[i] = (PPMPixel){red, green, blue};
+			imageOut->data[y * width + x] = (PPMPixel){red, green, blue};
+		}
 	}
 	
 	return imageOut;
@@ -258,7 +260,7 @@ int main(int argc, char** argv) {
 		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVerticalTranspose(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
