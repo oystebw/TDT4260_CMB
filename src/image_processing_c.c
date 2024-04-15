@@ -7,7 +7,7 @@
 #include "ppm.h"
 
 typedef float v4Accurate __attribute__((vector_size(16)));
-typedef __uint16_t v4Int __attribute__((vector_size(8)));
+typedef __uint32_t v4Int __attribute__((vector_size(16)));
 
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
