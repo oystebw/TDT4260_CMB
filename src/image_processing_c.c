@@ -158,6 +158,7 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 	imageOut->x = width;
 	imageOut->y = height;
+	#pragma omp parallel for simd num_threads(2)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 		for(int y = 0; y < height; y++) {
