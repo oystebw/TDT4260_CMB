@@ -7,6 +7,7 @@
 #include "ppm.h"
 
 typedef float v4Accurate __attribute__((vector_size(16)));
+typedef __uint16_t v4Int __attribute__((vector_size(8)));
 
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
@@ -79,33 +80,33 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
-		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+		v4Int sum = {0, 0, 0, 0};
 
 		for(int x = 0; x <= size; x++) {
 			PPMPixel pixel = in[yWidth + x];
-			sum += (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
+			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
 		}
 
-		out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; x++) {
 			PPMPixel pixel = in[yWidth + x + size];
-			sum += (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
-			out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		for(int x = size + 1; x < width - size; x++) {
 			PPMPixel pixelMinus = in[yWidth + x - size - 1];
 			PPMPixel pixelPlus = in[yWidth + x + size];
-			sum -= (v4Accurate){pixelMinus.red, pixelMinus.green, pixelMinus.blue, 0.0};
-			sum += (v4Accurate){pixelPlus.red, pixelPlus.green, pixelPlus.blue, 0.0};
-			out[yWidth + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+			sum -= (v4Int){pixelMinus.red, pixelMinus.green, pixelMinus.blue, 0.0};
+			sum += (v4Int){pixelPlus.red, pixelPlus.green, pixelPlus.blue, 0.0};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 		}
 
 		for(int x = width - size; x < width; x++) {
 			PPMPixel pixel = in[yWidth + x - size - 1];
-			sum -= (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
-			out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			sum -= (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
 }
