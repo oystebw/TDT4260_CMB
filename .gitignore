@@ -32,7 +32,7 @@
 *.app
 
 *.DS_Store
-*.ppm
+.ppm
 image_processing_c
 image_processing_reference
 checker

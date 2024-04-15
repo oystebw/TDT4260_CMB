@@ -76,73 +76,64 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     return imageOut;
 }
 
-AccurateImage* blurIteration(PPMImage* image, const int size) {
-	const int width = image->x;
-	const int height = image->y;
-	v4Accurate* scratch = (v4Accurate*)malloc(width * height * sizeof(v4Accurate));
-	AccurateImage* imageOut = (AccurateImage*)malloc(sizeof(AccurateImage));
-	imageOut = convertToAccurateImage(image);
+void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	
-	#pragma GCC unroll 5
-	for(int i = 0; i < BLUR_ITERATIONS; i++) {
-		#pragma GCC unroll 8
-		for(int y = 0; y < height; y++) {
+	for(int y = 0; y < height; y++) {
 
-			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
-			for(int x = 0; x <= size; x++) {
-				sum += imageOut->data[y * width + x];
-			}
-
-			scratch[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
-
-			for(int x = 1; x <= size; x++) {
-				sum += imageOut->data[y * width + x + size];
-				scratch[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
-			}
-
-			for(int x = size + 1; x < width - size; x++) {
-				sum -= imageOut->data[y * width + x - size - 1];
-				sum += imageOut->data[y * width + x + size];
-				scratch[x * height + y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
-			}
-
-			for(int x = width - size; x < width; x++) {
-				sum -= imageOut->data[y * width + x - size - 1];
-				scratch[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
-			}
-			
+		for(int x = 0; x <= size; x++) {
+			sum += in[y * width + x];
 		}
-		#pragma GCC unroll 8
-		for(int x = 0; x < width; x++) {
 
-			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
-			for(int y = 0; y <= size; y++) {
-				sum += scratch[x * height + y];
-			}
+		for(int x = 1; x <= size; x++) {
+			sum += in[y * width + x + size];
+			out[y * width + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+		}
 
-			imageOut->data[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		for(int x = size + 1; x < width - size; x++) {
+			sum -= in[y * width + x - size - 1];
+			sum += in[y * width + x + size];
+			out[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+		}
 
-			for(int y = 1; y <= size; y++) {
-				sum += scratch[x * height + y + size];
-				imageOut->data[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
-			}
-
-			for(int y = size + 1; y < height - size; y++) {
-				sum -= scratch[x * height + y - size - 1];
-				sum += scratch[x * height + y + size];
-				imageOut->data[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
-			}
-
-			for(int y = height - size; y < height; y++) {
-				sum -= scratch[x * height + y - size - 1];
-				imageOut->data[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
-			}
+		for(int x = width - size; x < width; x++) {
+			sum -= in[y * width + x - size - 1];
+			out[y * width + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
-	free(scratch);
-	return imageOut;
+}
+
+void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+
+	for(int x = 0; x < width; x++) {
+
+		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int y = 0; y <= size; y++) {
+			sum += in[y * width + x];
+		}
+
+		out[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+		for(int y = 1; y <= size; y++) {
+			sum += in[(y + size) * width + x];
+			out[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+		}
+
+		for(int y = size + 1; y < height - size; y++) {
+			sum -= in[(y - size - 1) * width + x];
+			sum += in[(y + size) * width + x];
+			out[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+		}
+
+		for(int y = height - size; y < height; y++) {
+			sum -= in[(y - size - 1) * width + x];
+			out[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+		}
+	}
 }
 
 PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
@@ -182,16 +173,33 @@ int main(int argc, char** argv) {
         image = readStreamPPM(stdin);
     }
 
+	const int width = image->x;
+	const int height = image->y;
+	const int size = width * height;
+
 	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
-	PPMImage* imagesPPM[3];
+	images[0] = convertToAccurateImage(image);
+	images[1] = copyAccurateImage(images[0]);
+	images[2] = copyAccurateImage(images[0]);
+	images[3] = copyAccurateImage(images[0]);
+	v4Accurate* scratch = (v4Accurate*)malloc(size * sizeof(v4Accurate));
 	const int sizes[4] = {2, 3, 5, 8};
 
-	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
-		images[i] = blurIteration(image, sizes[i]);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 	}
 
-	#pragma omp parallel for simd num_threads(3)
+	PPMImage* imagesPPM[3];
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
