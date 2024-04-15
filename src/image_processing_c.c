@@ -8,8 +8,9 @@
 #include "ppm.h"
 #define THREAD_NUMS 8
 
-pthread_barrier_t barrier1;
-pthread_barrier_t barrier2;
+pthread_mutex_t mutex;
+volatile int barrier1 = THREAD_NUMS;
+volatile int barrier2 = THREAD_NUMS;
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -205,9 +206,19 @@ void* threadFunc(void* arg) {
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontal(result, scratch, size, width, height, offset);
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
-	pthread_barrier_wait(&barrier1);
+	pthread_mutex_lock(&mutex);
+	barrier1--;
+	pthread_mutex_unlock(&mutex);
+	while(barrier1){
+
+	}
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
-	pthread_barrier_wait(&barrier2);
+	pthread_mutex_lock(&mutex);
+	barrier2--;
+	pthread_mutex_unlock(&mutex);
+	while(barrier2){
+	
+	}
 	blurIterationVertical(scratch, result, size, width, height, offset);
 	blurIterationVertical(result, scratch, size, width, height, offset);
 	blurIterationVertical(scratch, result, size, width, height, offset);
@@ -242,8 +253,6 @@ int main(int argc, char** argv) {
 	}
 
 	pthread_t threads[THREAD_NUMS];
-	pthread_barrier_init(&barrier1, NULL, THREAD_NUMS);
-	pthread_barrier_init(&barrier2, NULL, THREAD_NUMS);
 
 	for(int i = 0; i < THREAD_NUMS; i++) {
 		struct args* args = (struct args*)malloc(sizeof(struct args));
