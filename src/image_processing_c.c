@@ -6,8 +6,6 @@
 
 #include "ppm.h"
 
-#define BLUR_ITERATIONS 5
-
 typedef float v4Accurate __attribute__((vector_size(16)));
 
 // Image from:
@@ -187,15 +185,14 @@ int main(int argc, char** argv) {
 
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 	}
 
