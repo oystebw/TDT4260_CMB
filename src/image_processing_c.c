@@ -77,29 +77,30 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	
 	for(int y = 0; y < height; y++) {
+		const int yWidth = y * width;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 		for(int x = 0; x <= size; x++) {
-			sum += in[y * width + x];
+			sum += in[yWidth + x];
 		}
 
-		out[y * width + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; x++) {
-			sum += in[y * width + x + size];
-			out[y * width + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+			sum += in[yWidth + x + size];
+			out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		for(int x = size + 1; x < width - size; x++) {
-			sum -= in[y * width + x - size - 1];
-			sum += in[y * width + x + size];
-			out[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+			sum -= in[yWidth + x - size - 1];
+			sum += in[yWidth + x + size];
+			out[yWidth + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 		}
 
 		for(int x = width - size; x < width; x++) {
-			sum -= in[y * width + x - size - 1];
-			out[y * width + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			sum -= in[yWidth + x - size - 1];
+			out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
 }
