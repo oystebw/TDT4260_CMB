@@ -188,7 +188,7 @@ struct args{
 	v4Accurate* scratch;
 };
 
-void* threadFunc(void* arg) {
+void* threadFuncHorizontal(void* arg) {
 	struct args* args = (struct args*)arg;
 	const int offset = args->offset;
 	const int width = args->width;
@@ -203,8 +203,17 @@ void* threadFunc(void* arg) {
 	blurIterationHorizontal(result, scratch, size, width, height, offset);
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
-	
-	sleep(10);
+}
+
+void* threadFuncVertical(void* arg) {
+	struct args* args = (struct args*)arg;
+	const int offset = args->offset;
+	const int width = args->width;
+	const int height = args->height;
+	const int size = args->size;
+	PPMPixel* ppmImage = args->ppmImage;
+	v4Accurate* result = args->result;
+	v4Accurate* scratch = args->scratch;
 
 	blurIterationVertical(scratch, result, size, width, height, offset);
 	blurIterationVertical(result, scratch, size, width, height, offset);
@@ -250,7 +259,23 @@ int main(int argc, char** argv) {
 		args->ppmImage = image->data;
 		args->result = images[i % 4]->data;
 		args->scratch = scratches + (i % 4) * size;
-		pthread_create(&threads[i], NULL, threadFunc, (void*)args);
+		pthread_create(&threads[i], NULL, threadFuncHorizontal, (void*)args);
+	}
+
+	for(int i = 0; i < THREAD_NUMS; i++) {
+		pthread_join(threads[i], NULL);
+	}
+
+	for(int i = 0; i < THREAD_NUMS; i++) {
+		struct args* args = (struct args*)malloc(sizeof(struct args));
+		args->offset = i / 4;
+		args->width = width;
+		args->height = height;
+		args->size = sizes[i % 4];
+		args->ppmImage = image->data;
+		args->result = images[i % 4]->data;
+		args->scratch = scratches + (i % 4) * size;
+		pthread_create(&threads[i], NULL, threadFuncVertical, (void*)args);
 	}
 
 	for(int i = 0; i < THREAD_NUMS; i++) {
