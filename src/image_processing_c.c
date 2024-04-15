@@ -206,16 +206,16 @@ void* threadFunc(void* arg) {
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontal(result, scratch, size, width, height, offset);
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 	barrier1--;
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 	while(barrier1){
 
 	}
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 	barrier2--;
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 	while(barrier2){
 	
 	}
