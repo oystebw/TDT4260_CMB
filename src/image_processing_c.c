@@ -74,6 +74,42 @@ PPMImage* convertToPPPMImage(const AccurateImage* imageIn) {
     return imageOut;
 }
 
+void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height) {
+	
+	for(int y = 0; y < height; y++) {
+		const int yWidth = y * width;
+
+		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int x = 0; x <= size; x++) {
+			PPMPixel pixel = in[yWidth + x];
+			sum += (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
+		}
+
+		out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+		for(int x = 1; x <= size; x++) {
+			PPMPixel pixel = in[yWidth + x + size];
+			sum += (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
+			out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+		}
+
+		for(int x = size + 1; x < width - size; x++) {
+			PPMPixel pixelMinus = in[yWidth + x - size - 1];
+			PPMPixel pixelPlus = in[yWidth + x + size];
+			sum -= (v4Accurate){pixelMinus.red, pixelMinus.green, pixelMinus.blue, 0.0};
+			sum += (v4Accurate){pixelPlus.red, pixelPlus.green, pixelPlus.blue, 0.0};
+			out[yWidth + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+		}
+
+		for(int x = width - size; x < width; x++) {
+			PPMPixel pixel = in[yWidth + x - size - 1];
+			sum -= (v4Accurate){pixel.red, pixel.green, pixel.blue, 0.0};
+			out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+		}
+	}
+}
+
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	
 	for(int y = 0; y < height; y++) {
@@ -240,17 +276,21 @@ int main(int argc, char** argv) {
 	const int height = image->y;
 	const int size = width * height;
 
-	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
-	images[0] = convertToAccurateImage(image);
-	images[1] = copyAccurateImage(images[0]);
-	images[2] = copyAccurateImage(images[0]);
-	images[3] = copyAccurateImage(images[0]);
-	v4Accurate* scratches = (v4Accurate*)malloc(sizeof(v4Accurate) * size * 4);
 	const int sizes[4] = {2, 3, 5, 8};
+
+	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
+	v4Accurate* scratches = (v4Accurate*)malloc(sizeof(v4Accurate) * size * 4);
+
+	for(int i = 0; i < 4; i++) {
+		images[i] = (AccurateImage*)malloc(sizeof(AccurateImage));
+		images[i]->x = width;
+		images[i]->y = height;
+		images[i]->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	}
 
 	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
-		blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
