@@ -203,9 +203,11 @@ void* threadFuncHorizontal(void* arg) {
 	blurIterationHorizontal(result, scratch, size, width, height, offset);
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
+	printf("Horizontal done\n");
 }
 
 void* threadFuncVertical(void* arg) {
+	printf("Vertical start\n");
 	struct args* args = (struct args*)arg;
 	const int offset = args->offset;
 	const int width = args->width;
