@@ -8,10 +8,6 @@
 #include "ppm.h"
 #define THREAD_NUMS 8
 
-pthread_mutex_t mutex;
-volatile int barrier1;
-volatile int barrier2;
-
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
 
@@ -192,7 +188,7 @@ struct args{
 	v4Accurate* scratch;
 };
 
-void* threadFunc(void* arg) {
+void* threadFuncHorizontal(void* arg) {
 	struct args* args = (struct args*)arg;
 	const int offset = args->offset;
 	const int width = args->width;
@@ -206,25 +202,37 @@ void* threadFunc(void* arg) {
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontal(result, scratch, size, width, height, offset);
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
-	pthread_mutex_lock(&mutex);
-	barrier1--;
-	pthread_mutex_unlock(&mutex);
-	while(barrier1){
-	}
+}
+
+void* threadFuncHorizontalTranspose(void* arg) {
+	struct args* args = (struct args*)arg;
+	const int offset = args->offset;
+	const int width = args->width;
+	const int height = args->height;
+	const int size = args->size;
+	PPMPixel* ppmImage = args->ppmImage;
+	v4Accurate* result = args->result;
+	v4Accurate* scratch = args->scratch;
+
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
-	pthread_mutex_lock(&mutex);
-	barrier2--;
-	pthread_mutex_unlock(&mutex); 
-	while(barrier2){
-	
-	}
+}
+
+void* threadFuncVertical(void* arg) {
+	struct args* args = (struct args*)arg;
+	const int offset = args->offset;
+	const int width = args->width;
+	const int height = args->height;
+	const int size = args->size;
+	PPMPixel* ppmImage = args->ppmImage;
+	v4Accurate* result = args->result;
+	v4Accurate* scratch = args->scratch;
+
 	blurIterationVertical(scratch, result, size, width, height, offset);
 	blurIterationVertical(result, scratch, size, width, height, offset);
 	blurIterationVertical(scratch, result, size, width, height, offset);
 	blurIterationVertical(result, scratch, size, width, height, offset);
 	blurIterationVertical(scratch, result, size, width, height, offset);
 }
-
 
 int main(int argc, char** argv) {
 
@@ -253,8 +261,6 @@ int main(int argc, char** argv) {
 
 
 	for(int i = 0; i < 4; i++) {
-		barrier1 = THREAD_NUMS;
-		barrier2 = THREAD_NUMS;
 		pthread_t threads[THREAD_NUMS];
 		for(int offset = 0; offset < THREAD_NUMS; offset++) {
 			struct args* args = (struct args*)malloc(sizeof(struct args));
@@ -265,7 +271,12 @@ int main(int argc, char** argv) {
 			args->ppmImage = image->data;
 			args->result = images[i]->data;
 			args->scratch = scratches + i * size;
-			pthread_create(&threads[i], NULL, threadFunc, (void*)args);
+			pthread_create(&threads[i], NULL, threadFuncHorizontal, (void*)args);
+			pthread_join(threads[i], NULL);
+		
+			pthread_create(&threads[i], NULL, threadFuncHorizontalTranspose, (void*)args);
+		
+			pthread_create(&threads[i], NULL, threadFuncVertical, (void*)args);
 		}
 		for(int offset = 0; offset < THREAD_NUMS; offset++) {
 			pthread_join(threads[i], NULL);
