@@ -223,7 +223,6 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 			imageOut->data[y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
-	
 	return imageOut;
 }
 
@@ -246,21 +245,26 @@ int main(int argc, char** argv) {
 	images[1] = copyAccurateImage(images[0]);
 	images[2] = copyAccurateImage(images[0]);
 	images[3] = copyAccurateImage(images[0]);
-	v4Accurate* scratch = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	v4Accurate** scratches = (v4Accurate**)malloc(sizeof(v4Accurate*) * 4);
+	scratches[0] = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	scratches[1] = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	scratches[2] = (v4Accurate*)malloc(size * sizeof(v4Accurate));
+	scratches[3] = (v4Accurate*)malloc(size * sizeof(v4Accurate));
 	const int sizes[4] = {2, 3, 5, 8};
 
+	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratches[i], sizes[i], width, height);
+		blurIterationHorizontal(scratches[i], images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratches[i], sizes[i], width, height);
+		blurIterationHorizontal(scratches[i], images[i]->data, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images[i]->data, scratches[i], sizes[i], width, height);
 
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(scratches[i], images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratches[i], sizes[i], width, height);
+		blurIterationVertical(scratches[i], images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratches[i], sizes[i], width, height);
+		blurIterationVertical(scratches[i], images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
