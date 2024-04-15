@@ -7,7 +7,6 @@
 
 #include "ppm.h"
 #define THREAD_NUMS 8
-pthread_barrier_t* barrier;
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -205,12 +204,9 @@ void* threadFunc(void* arg) {
 	blurIterationHorizontal(scratch, result, size, width, height, offset);
 	blurIterationHorizontalTranspose(result, scratch, size, width, height, offset);
 	
-	pthread_barrier_wait(barrier);
-
-	printf("Done!\n");
+	sleep(10);
 
 	blurIterationVertical(scratch, result, size, width, height, offset);
-	printf("No one here before sync!\n");
 	blurIterationVertical(result, scratch, size, width, height, offset);
 	blurIterationVertical(scratch, result, size, width, height, offset);
 	blurIterationVertical(result, scratch, size, width, height, offset);
@@ -244,8 +240,6 @@ int main(int argc, char** argv) {
 	}
 
 	pthread_t threads[THREAD_NUMS];
-	barrier = (pthread_barrier_t*)malloc(sizeof(pthread_barrier_t));
-	pthread_barrier_init(barrier, NULL, THREAD_NUMS);
 
 	for(int i = 0; i < THREAD_NUMS; i++) {
 		struct args* args = (struct args*)malloc(sizeof(struct args));
