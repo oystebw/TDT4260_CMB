@@ -105,31 +105,94 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	}
 }
 
+void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+	
+	for(int y = 0; y < height; y++) {
+		const int yWidth = y * width;
+
+		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int x = 0; x <= size; x++) {
+			sum += in[yWidth + x];
+		}
+
+		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+		for(int x = 1; x <= size; x++) {
+			sum += in[yWidth + x + size];
+			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+		}
+
+		for(int x = size + 1; x < width - size; x++) {
+			sum -= in[yWidth + x - size - 1];
+			sum += in[yWidth + x + size];
+			out[x * height + y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+		}
+
+		for(int x = width - size; x < width; x++) {
+			sum -= in[yWidth + x - size - 1];
+			out[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+		}
+	}
+}
+
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 
 	for(int x = 0; x < width; x++) {
+		const int xHeight = x * height;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 		for(int y = 0; y <= size; y++) {
-			sum += in[y * width + x];
+			sum += in[xHeight + y];
+		}
+
+		out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+		for(int y = 1; y <= size; y++) {
+			sum += in[xHeight + y + size];
+			out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+		}
+
+		for(int y = size + 1; y < height - size; y++) {
+			sum -= in[xHeight + y - size - 1];
+			sum += in[xHeight + y + size];
+			out[xHeight + y] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
+		}
+
+		for(int y = height - size; y < height; y++) {
+			sum -= in[xHeight + y - size - 1];
+			out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+		}
+	}
+}
+
+void blurIterationVerticalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+
+	for(int x = 0; x < width; x++) {
+		const int xHeight = x * height;
+
+		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int y = 0; y <= size; y++) {
+			sum += in[xHeight + y];
 		}
 
 		out[0 * width + x] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int y = 1; y <= size; y++) {
-			sum += in[(y + size) * width + x];
+			sum += in[xHeight + y + size];
 			out[y * width + x] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 		}
 
 		for(int y = size + 1; y < height - size; y++) {
-			sum -= in[(y - size - 1) * width + x];
-			sum += in[(y + size) * width + x];
+			sum -= in[xHeight + y - size - 1];
+			sum += in[xHeight + y + size];
 			out[y * width + x] = sum / (v4Accurate){2 * size + 1, 2 * size + 1, 2 * size + 1, 2 * size + 1};
 		}
 
 		for(int y = height - size; y < height; y++) {
-			sum -= in[(y - size - 1) * width + x];
+			sum -= in[xHeight + y - size - 1];
 			out[y * width + x] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 		}
 	}
@@ -189,13 +252,13 @@ int main(int argc, char** argv) {
 		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images[i]->data, scratch, sizes[i], width, height);
 
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationVerticalTranspose(scratch, images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
