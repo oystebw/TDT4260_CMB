@@ -203,17 +203,18 @@ int main(int argc, char** argv) {
 
 
 	for(int i = 0; i < 4; i++) {
+		#pragma omp parallel for simd num_threads(8)
 		for(int offset = 0; offset < 8; offset ++) {
 			blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 		}
-
+		#pragma omp parallel for simd num_threads(8)
 		for(int offset = 0; offset < 8; offset ++) {
 			blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 		}
-
+		#pragma omp parallel for simd num_threads(8)
 		for(int offset = 0; offset < 8; offset ++) {
 			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
