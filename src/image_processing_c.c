@@ -272,10 +272,34 @@ int main(int argc, char** argv) {
 			args->result = images[i]->data;
 			args->scratch = scratches + i * size;
 			pthread_create(&threads[i], NULL, threadFuncHorizontal, (void*)args);
+		}
+		for(int offset = 0; offset < THREAD_NUMS; offset++) {
 			pthread_join(threads[i], NULL);
-		
+		}	
+		for(int offset = 0; offset < THREAD_NUMS; offset++) {
+			struct args* args = (struct args*)malloc(sizeof(struct args));
+			args->offset = offset;
+			args->width = width;
+			args->height = height;
+			args->size = sizes[i];
+			args->ppmImage = image->data;
+			args->result = images[i]->data;
+			args->scratch = scratches + i * size;
 			pthread_create(&threads[i], NULL, threadFuncHorizontalTranspose, (void*)args);
-		
+		}
+		for(int offset = 0; offset < THREAD_NUMS; offset++) {
+			pthread_join(threads[i], NULL);
+		}
+
+		for(int offset = 0; offset < THREAD_NUMS; offset++) {
+			struct args* args = (struct args*)malloc(sizeof(struct args));
+			args->offset = offset;
+			args->width = width;
+			args->height = height;
+			args->size = sizes[i];
+			args->ppmImage = image->data;
+			args->result = images[i]->data;
+			args->scratch = scratches + i * size;
 			pthread_create(&threads[i], NULL, threadFuncVertical, (void*)args);
 		}
 		for(int offset = 0; offset < THREAD_NUMS; offset++) {
