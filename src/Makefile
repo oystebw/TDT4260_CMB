@@ -3,7 +3,7 @@
 LD:=g++
 CC:=gcc
 CXX:=g++
-CFLAGS:=-g -fno-omit-frame-pointer -O2 -I. -fopenmp -std=c99
+CFLAGS:=-g -fno-omit-frame-pointer -O2 -I. -fopenmp #-std=c99
 CXXFLAGS:=-g -fno-omit-frame-pointer -O2 -I. -fopenmp -std=c++14 -DON_VM
 LDFLAGS:=-lOpenCL -lpthread -fopenmp -DHAVE_OPENMP
 
