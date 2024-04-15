@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include <omp.h>
+#include <pthread.h>
 
 #include "ppm.h"
 
@@ -20,7 +21,6 @@ typedef struct {
 
 void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height) {
 	
-	#pragma omp parallel for simd num_threads(8)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -57,7 +57,6 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	
-	#pragma omp parallel for simd num_threads(8)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -89,7 +88,6 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	
-	#pragma omp parallel for simd num_threads(8)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -121,7 +119,6 @@ void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 
-	#pragma omp parallel for simd num_threads(8)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 
