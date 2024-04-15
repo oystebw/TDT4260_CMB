@@ -268,6 +268,7 @@ int main(int argc, char** argv) {
 	}
 
 	PPMImage* imagesPPM[3];
+	#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
