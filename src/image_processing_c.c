@@ -84,7 +84,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 			sum += in[y * width + x];
 		}
 
-		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		out[y * width + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; x++) {
 			sum += in[y * width + x + size];
@@ -185,14 +185,15 @@ int main(int argc, char** argv) {
 
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
-		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(scratch, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratch, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratch, sizes[i], width, height);
 		blurIterationVertical(scratch, images[i]->data, sizes[i], width, height);
 	}
 
