@@ -223,9 +223,9 @@ int main(int argc, char** argv) {
 	}
 
 	PPMImage* imagesPPM[3];
-	#pragma omp parallel num_threads(8)
+	#pragma omp parallel num_threads(4)
 	{
-	#pragma omp for schedule(dynamic,1)
+	#pragma omp for schedule(static,1)
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
