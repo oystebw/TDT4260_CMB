@@ -139,31 +139,41 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	#pragma simd
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
+		for(int iteration = 0; iteration < 5; iteration++) {
+			
+			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
-		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+			for(int y = 0; y <= size; y++) {
+				sum += in[xHeight + y];
+			}
 
-		for(int y = 0; y <= size; y++) {
-			sum += in[xHeight + y];
+			out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+			for(int y = 1; y <= size; y++) {
+				sum += in[xHeight + y + size];
+				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+			}
+
+			const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+			for(int y = size + 1; y < height - size; y++) {
+				sum -= in[xHeight + y - size - 1];
+				sum += in[xHeight + y + size];
+				out[xHeight + y] = sum * divisor;
+			}
+
+			for(int y = height - size; y < height; y++) {
+				sum -= in[xHeight + y - size - 1];
+				out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+			}
+			// swap
+			v4Accurate* tmp = in;
+			in = out;
+			out = tmp;
 		}
-
-		out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
-
-		for(int y = 1; y <= size; y++) {
-			sum += in[xHeight + y + size];
-			out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
-		}
-
-		const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-		for(int y = size + 1; y < height - size; y++) {
-			sum -= in[xHeight + y - size - 1];
-			sum += in[xHeight + y + size];
-			out[xHeight + y] = sum * divisor;
-		}
-
-		for(int y = height - size; y < height; y++) {
-			sum -= in[xHeight + y - size - 1];
-			out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
-		}
+		// swap
+		v4Accurate* tmp = in;
+		in = out;
+		out = tmp;
 	}
 }
 
@@ -231,10 +241,10 @@ int main(int argc, char** argv) {
 		// blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height);
 		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
-		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
-		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
-		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
+		// blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
+		// blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
+		// blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
+		// blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
