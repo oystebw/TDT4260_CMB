@@ -188,9 +188,9 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 	imageOut->x = width;
 	imageOut->y = height;
+	#pragma omp parallel for simd num_threads(3)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
-		#pragma simd
 		for(int y = 0; y < height; y++) {
 			v4Accurate diffvec = imageInLarge->data[xHeight + y] - imageInSmall->data[xHeight + y];
 			float red = diffvec[0];
