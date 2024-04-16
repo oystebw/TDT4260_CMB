@@ -22,7 +22,7 @@ typedef struct {
 } AccurateImage;
 
 
-void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height) {
+void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -59,7 +59,7 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 	}
 }
 
-void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -103,7 +103,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	}
 }
 
-void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -135,7 +135,7 @@ void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int
 	}
 }
 
-void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	#pragma omp parallel for simd num_threads(2)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
@@ -178,13 +178,13 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 }
 
 
-PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage* imageInLarge) {
+PPMImage* imageDifference(const AccurateImage* restrict imageInSmall, const AccurateImage* restrict imageInLarge) {
 	const int width = imageInSmall->x;
 	const int height = imageInSmall->y;
 	const int size = width * height;
 
-	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel*)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
+	PPMImage* restrict imageOut = (PPMImage*)malloc(sizeof(PPMImage));
+	imageOut->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
 
 	imageOut->x = width;
 	imageOut->y = height;
@@ -209,9 +209,7 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 int main(int argc, char** argv) {
 
-    PPMImage* image;
-
-	image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
+    const PPMImage* restrict image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
 
 	const int width = image->x;
 	const int height = image->y;
@@ -219,14 +217,14 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
-	v4Accurate* scratches = (v4Accurate*)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
+	AccurateImage** restrict images = (AccurateImage** restrict)malloc(sizeof(AccurateImage*) * 4);
+	v4Accurate* restrict scratches = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
 
 	for(int i = 0; i < 4; i++) {
-		images[i] = (AccurateImage*)malloc(sizeof(AccurateImage));
+		images[i] = (AccurateImage* restrict)malloc(sizeof(AccurateImage));
 		images[i]->x = width;
 		images[i]->y = height;
-		images[i]->data = (v4Accurate*)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
+		images[i]->data = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
 	}
 
 	#pragma omp parallel for simd num_threads(4)
