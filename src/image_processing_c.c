@@ -63,7 +63,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	#pragma simd
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
-		for(int iteration = 0; iteration < 4; iteration++) {
+		for(int iteration = 0; iteration < 3; iteration++) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -246,9 +246,8 @@ int main(int argc, char** argv) {
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
-		transpose(scratches + i * size, images[i]->data, width, height);
-		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
-		images[i]->data = scratches + i * size;
+		blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
