@@ -161,7 +161,6 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 
 	imageOut->x = width;
 	imageOut->y = height;
-	#pragma omp parallel for simd num_threads(3)
 	#pragma ivdep
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
@@ -209,18 +208,15 @@ int main(int argc, char** argv) {
 
 	#pragma GCC ivdep
 	for(int i = 0; i < 4; i++) {
-		#pragma omp parallel for simd num_threads(4)
 		for(int offset = 0; offset < 4; offset ++) {
 			blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 		}
-		#pragma omp parallel for simd num_threads(4)
 		for(int offset = 0; offset < 4; offset ++) {
 			blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
 		}
-		#pragma omp parallel for simd num_threads(4)
 		for(int offset = 0; offset < 4; offset ++) {
 			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
 			blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
@@ -231,7 +227,6 @@ int main(int argc, char** argv) {
 	}
 
 	PPMImage* imagesPPM[3];
-	#pragma omp parallel for simd num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
