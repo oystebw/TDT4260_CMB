@@ -144,7 +144,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; y++) {
-				sum += in[xHeight + y];
+				sum += in[xHeight + y];  
 			}
 
 			out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
