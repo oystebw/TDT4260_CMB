@@ -19,7 +19,7 @@ typedef struct {
 
 
 void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
-	
+	#pragma ivdep
 	for(int y = offset; y < height; y += 4) {
 		const int yWidth = y * width;
 
@@ -55,7 +55,7 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 }
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
-	
+	#pragma ivdep
 	for(int y = offset; y < height; y += 4) {
 		const int yWidth = y * width;
 
@@ -86,7 +86,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 }
 
 void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
-	
+	#pragma ivdep
 	for(int y = offset; y < height; y += 4) {
 		const int yWidth = y * width;
 
@@ -117,7 +117,7 @@ void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int
 }
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
-
+	#pragma ivdep
 	for(int x = offset; x < width; x += 4) {
 		const int xHeight = x * height;
 
@@ -159,8 +159,10 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 	imageOut->x = width;
 	imageOut->y = height;
 	#pragma omp parallel for simd num_threads(3)
+	#pragma ivdep
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
+		#pragma GCC ivdep
 		for(int y = 0; y < height; y++) {
 			v4Accurate diffvec = imageInLarge->data[xHeight + y] - imageInSmall->data[xHeight + y];
 			float red = diffvec[0];
@@ -202,7 +204,7 @@ int main(int argc, char** argv) {
 		images[i]->data = (v4Accurate*)malloc(size * sizeof(v4Accurate));
 	}
 
-
+	#pragma GCC ivdep
 	for(int i = 0; i < 4; i++) {
 		#pragma omp parallel for simd num_threads(4)
 		for(int offset = 0; offset < 4; offset ++) {
