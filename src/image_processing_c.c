@@ -79,7 +79,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 		const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 		int x;
-		for(x = size + 1; x < width - size - 1; x += 2) {
+		for(x = size + 1; x < width - size - 3; x += 4) {
 			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
@@ -87,6 +87,12 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 			sum -= in[yWidth + x - size];
 			sum += in[yWidth + x + size + 1];
 			out[yWidth + x + 1] = sum * divisor;
+			sum -= in[yWidth + x - size + 1];
+			sum += in[yWidth + x + size + 2];
+			out[yWidth + x + 2] = sum * divisor;
+			sum -= in[yWidth + x - size + 2];
+			sum += in[yWidth + x + size + 3];
+			out[yWidth + x + 3] = sum * divisor;
 		}
 		for(; x < width - size; x++) {
 			sum -= in[yWidth + x - size - 1];
@@ -152,7 +158,22 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 		}
 
 		const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-		for(int y = size + 1; y < height - size; y++) {
+		int y;
+		for(y = size + 1; y < height - size - 3; y += 4) {
+			sum -= in[xHeight + y - size - 1];
+			sum += in[xHeight + y + size];
+			out[xHeight + y] = sum * divisor;
+			sum -= in[xHeight + y - size];
+			sum += in[xHeight + y + size + 1];
+			out[xHeight + y + 1] = sum * divisor;
+			sum -= in[xHeight + y - size + 1];
+			sum += in[xHeight + y + size + 2];
+			out[xHeight + y + 2] = sum * divisor;
+			sum -= in[xHeight + y - size + 2];
+			sum += in[xHeight + y + size + 3];
+			out[xHeight + y + 3] = sum * divisor;
+		}
+		for(; y < height - size; y++) {
 			sum -= in[xHeight + y - size - 1];
 			sum += in[xHeight + y + size];
 			out[xHeight + y] = sum * divisor;
