@@ -7,6 +7,7 @@
 #include "ppm.h"
 
 #define PAGESIZE 4096
+#define CACHELINESIZE 64
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -156,7 +157,7 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 	const int size = width * height;
 
 	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel*)aligned_alloc(PAGESIZE, sizeof(PPMPixel) * size);
+	imageOut->data = (PPMPixel*)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
 
 	imageOut->x = width;
 	imageOut->y = height;
@@ -197,13 +198,13 @@ int main(int argc, char** argv) {
 	const int sizes[4] = {2, 3, 5, 8};
 
 	AccurateImage** images = (AccurateImage**)malloc(sizeof(AccurateImage*) * 4);
-	v4Accurate* scratches = (v4Accurate*)aligned_alloc(PAGESIZE, sizeof(v4Accurate) * size * 4);
+	v4Accurate* scratches = (v4Accurate*)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
 
 	for(int i = 0; i < 4; i++) {
 		images[i] = (AccurateImage*)malloc(sizeof(AccurateImage));
 		images[i]->x = width;
 		images[i]->y = height;
-		images[i]->data = (v4Accurate*)aligned_alloc(PAGESIZE, sizeof(v4Accurate) * size);
+		images[i]->data = (v4Accurate*)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
 	}
 
 	#pragma GCC ivdep
