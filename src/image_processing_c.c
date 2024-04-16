@@ -210,11 +210,8 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 int main(int argc, char** argv) {
 
     PPMImage* image;
-    if(argc > 1) {
-        image = readPPM("flower.ppm");
-    } else {
-        image = readStreamPPM(stdin);
-    }
+
+	image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
 
 	const int width = image->x;
 	const int height = image->y;
@@ -246,14 +243,8 @@ int main(int argc, char** argv) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
 
-    if(argc > 1) {
-        writePPM("flower_tiny.ppm", imagesPPM[0]);
-        writePPM("flower_small.ppm", imagesPPM[1]);
-        writePPM("flower_medium.ppm", imagesPPM[2]);
-    } else {
-        writeStreamPPM(stdout, imagesPPM[0]);
-        writeStreamPPM(stdout, imagesPPM[1]);
-        writeStreamPPM(stdout, imagesPPM[2]);
-    }
+	(argc > 1) ? writePPM("flower_tiny.ppm", imagesPPM[0]) : writeStreamPPM(stdout, imagesPPM[0]);
+	(argc > 1) ? writePPM("flower_small.ppm", imagesPPM[1]) : writeStreamPPM(stdout, imagesPPM[1]);
+	(argc > 1) ? writePPM("flower_medium.ppm", imagesPPM[2]) : writeStreamPPM(stdout, imagesPPM[2]);
 }
 
