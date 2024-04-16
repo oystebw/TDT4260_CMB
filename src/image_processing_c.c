@@ -10,6 +10,7 @@
 #define CACHELINESIZE 64
 
 typedef float v4Accurate __attribute__((vector_size(16)));
+typedef float v16Accurate __attribute__((vector_size(64)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
 
 // Image from:
@@ -77,10 +78,14 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 		}
 
 		const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-		for(int x = size + 1; x < width - size; x++) {
+		for(int x = size + 1; x < width - size; x += 2) {
+			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[yWidth + x] = sum * divisor;
+			sum -= in[yWidth + x - size];
+			sum += in[yWidth + x + size + 1];
+			out[yWidth + x + 1] = sum * divisor;
 		}
 
 		for(int x = width - size; x < width; x++) {
