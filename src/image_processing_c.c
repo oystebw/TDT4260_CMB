@@ -23,6 +23,7 @@ typedef struct {
 
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -42,7 +43,6 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
-		const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 		for(int x = size + 1; x < width - size; x++) {
 			PPMPixel pixelMinus = in[yWidth + x - size - 1];
 			PPMPixel pixelPlus = in[yWidth + x + size];
@@ -60,6 +60,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 }
 
 void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -78,7 +79,6 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
-			const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 			for(int x = size + 1; x < width - size; x++) {
 				
 				sum -= in[yWidth + x - size - 1];
@@ -104,6 +104,7 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
@@ -121,7 +122,6 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
-		const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 		for(int x = size + 1; x < width - size; x++) {
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
@@ -136,6 +136,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 }
 
 void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for simd num_threads(2)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
@@ -154,7 +155,6 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
-			const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 			for(int y = size + 1; y < height - size; y++) {
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
