@@ -60,7 +60,7 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 }
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	#pragma simd
+	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 		for(int iteration = 0; iteration < 3; iteration++) {
@@ -207,15 +207,6 @@ PPMImage* imageDifference(const AccurateImage* imageInSmall, const AccurateImage
 	return imageOut;
 }
 
-void transpose(v4Accurate* in, v4Accurate* out, const int width, const int height) {
-	for(int y = 0; y < height; y++) {
-		const int yWidth = y * width;
-		for(int x = 0; x < width; x++) {
-			out[x * height + y] = in[yWidth + x];
-		}
-	}
-}
-
 int main(int argc, char** argv) {
 
     PPMImage* image;
@@ -241,8 +232,7 @@ int main(int argc, char** argv) {
 		images[i]->data = (v4Accurate*)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
 	}
 
-	#pragma simd
-	int offset = 1;
+	#pragma omp parallel for simd num_threads(4)
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
@@ -251,6 +241,7 @@ int main(int argc, char** argv) {
 	}
 
 	PPMImage* imagesPPM[3];
+	#pragma omp parallel for num_threads(3)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
 	}
