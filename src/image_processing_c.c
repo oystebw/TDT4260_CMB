@@ -63,47 +63,58 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	#pragma simd
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
-
-		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
-
-		for(int x = 0; x <= size; x++) {
-			sum += in[yWidth + x];
-		}
-
-		out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
-
-		for(int x = 1; x <= size; x++) {
-			sum += in[yWidth + x + size];
-			out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
-		}
-
-		const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-		int x;
-		for(x = size + 1; x < width - size - 3; x += 4) {
+		for(int iteration = 0; iteration < 3; iteration++) {
 			
-			sum -= in[yWidth + x - size - 1];
-			sum += in[yWidth + x + size];
-			out[yWidth + x] = sum * divisor;
-			sum -= in[yWidth + x - size];
-			sum += in[yWidth + x + size + 1];
-			out[yWidth + x + 1] = sum * divisor;
-			sum -= in[yWidth + x - size + 1];
-			sum += in[yWidth + x + size + 2];
-			out[yWidth + x + 2] = sum * divisor;
-			sum -= in[yWidth + x - size + 2];
-			sum += in[yWidth + x + size + 3];
-			out[yWidth + x + 3] = sum * divisor;
-		}
-		for(; x < width - size; x++) {
-			sum -= in[yWidth + x - size - 1];
-			sum += in[yWidth + x + size];
-			out[yWidth + x] = sum * divisor;
-		}
+			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
-		for(x = width - size; x < width; x++) {
-			sum -= in[yWidth + x - size - 1];
-			out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			for(int x = 0; x <= size; x++) {
+				sum += in[yWidth + x];
+			}
+
+			out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+
+			for(int x = 1; x <= size; x++) {
+				sum += in[yWidth + x + size];
+				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+			}
+
+			const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+			int x;
+			for(x = size + 1; x < width - size - 3; x += 4) {
+				
+				sum -= in[yWidth + x - size - 1];
+				sum += in[yWidth + x + size];
+				out[yWidth + x] = sum * divisor;
+				sum -= in[yWidth + x - size];
+				sum += in[yWidth + x + size + 1];
+				out[yWidth + x + 1] = sum * divisor;
+				sum -= in[yWidth + x - size + 1];
+				sum += in[yWidth + x + size + 2];
+				out[yWidth + x + 2] = sum * divisor;
+				sum -= in[yWidth + x - size + 2];
+				sum += in[yWidth + x + size + 3];
+				out[yWidth + x + 3] = sum * divisor;
+			}
+			for(; x < width - size; x++) {
+				sum -= in[yWidth + x - size - 1];
+				sum += in[yWidth + x + size];
+				out[yWidth + x] = sum * divisor;
+			}
+
+			for(x = width - size; x < width; x++) {
+				sum -= in[yWidth + x - size - 1];
+				out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			}
+
+			// swap in and out
+			v4Accurate* tmp = in;
+			in = out;
+			out = tmp;
 		}
+		// swap in and out
+		v4Accurate* tmp = in;
+		in = out;
+		out = tmp;
 	}
 }
 
@@ -246,8 +257,8 @@ int main(int argc, char** argv) {
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height);
-		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
+		// blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height);
+		// blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
 		blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height);
 		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
 		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
