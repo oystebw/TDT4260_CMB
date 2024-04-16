@@ -23,7 +23,7 @@ typedef struct {
 
 
 void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height) {
-	#pragma simd
+	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -104,7 +104,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 }
 
 void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	#pragma simd
+	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -136,7 +136,7 @@ void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int
 }
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	#pragma simd
+	#pragma omp parallel for simd num_threads(2)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 		for(int iteration = 0; iteration < 5; iteration++) {
