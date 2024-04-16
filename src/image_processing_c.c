@@ -138,7 +138,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 		const int xHeight = x * height;
 		
 		int factor;
-		if(x > size && x <= width - size) {
+		if(x >= size && x < width - size) {
 			factor = 2 * size + 1;
 		} 
 		else if(x < size) {
@@ -147,6 +147,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 		else {
 			factor = size + width - x;
 		}
+		factor = 2 * size + 1;
 
 		for(int iteration = 0; iteration < 5; iteration++) {
 			
