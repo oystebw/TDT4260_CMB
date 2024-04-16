@@ -34,12 +34,12 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
 		}
 
-		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]};
+		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; x++) {
 			PPMPixel pixel = in[yWidth + x + size];
 			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		for(int x = size + 1; x < width - size; x++) {
@@ -53,7 +53,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 		for(int x = width - size; x < width; x++) {
 			PPMPixel pixel = in[yWidth + x - size - 1];
 			sum -= (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
 }
@@ -70,11 +70,11 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 				sum += in[yWidth + x];
 			}
 
-			out[yWidth + 0] = sum;
+			out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int x = 1; x <= size; x++) {
 				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum;
+				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
 			for(int x = size + 1; x < width - size; x++) {
@@ -86,7 +86,7 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 
 			for(int x = width - size; x < width; x++) {
 				sum -= in[yWidth + x - size - 1];
-				out[yWidth + x] = sum;
+				out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
 
 			// swap in and out
@@ -112,11 +112,11 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			sum += in[yWidth + x];
 		}
 
-		out[0 * height + y] = sum;
+		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; x++) {
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum;
+			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		for(int x = size + 1; x < width - size; x++) {
@@ -127,7 +127,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 		for(int x = width - size; x < width; x++) {
 			sum -= in[yWidth + x - size - 1];
-			out[x * height + y] = sum;
+			out[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
 }
@@ -144,14 +144,14 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 				sum += in[xHeight + y];
 			}
 
-			out[xHeight + 0] = sum / (v4Accurate){pow(size + 1, 2), pow(size + 1, 2), pow(size + 1, 2), pow(size + 1, 2)};
+			out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 			for(int y = 1; y <= size; y++) {
 				sum += in[xHeight + y + size];
-				out[xHeight + y] = sum / (v4Accurate){pow(y + size + 1, 2), pow(y + size + 1, 2), pow(y + size + 1, 2), pow(y + size + 1, 2)};
+				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
-			const v4Accurate divisor = (v4Accurate){1.0 / pow(2 * size + 1, 2), 1.0 / pow(2 * size + 1, 2), 1.0 / pow(2 * size + 1, 2), 1.0 / pow(2 * size + 1, 2)};
+			const v4Accurate divisor = (v4Accurate){1.0 / (pow(2 * size + 1, 2)), 1.0 / (pow(2 * size + 1, 2)), 1.0 / (pow(2 * size + 1, 2)), 1.0 / (pow(2 * size + 1, 2))};
 			for(int y = size + 1; y < height - size; y++) {
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
@@ -160,7 +160,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 
 			for(int y = height - size; y < height; y++) {
 				sum -= in[xHeight + y - size - 1];
-				out[xHeight + y] = sum / (v4Accurate){pow(size + height - y, 2), pow(size + height - y, 2), pow(size + height - y, 2), pow(size + height - y, 2)};
+				out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
 			// swap
 			v4Accurate* tmp = in;
