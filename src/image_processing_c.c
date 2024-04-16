@@ -24,7 +24,6 @@ typedef struct {
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -61,7 +60,6 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 
 void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 		for(int iteration = 0; iteration < 3; iteration++) {
@@ -105,7 +103,6 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for simd num_threads(2)
 	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
@@ -137,7 +134,6 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for simd num_threads(2)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 		for(int iteration = 0; iteration < 5; iteration++) {
@@ -188,7 +184,6 @@ PPMImage* imageDifference(const AccurateImage* restrict imageInSmall, const Accu
 
 	imageOut->x = width;
 	imageOut->y = height;
-	#pragma omp parallel for simd num_threads(3)
 	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 		for(int y = 0; y < height; y++) {
@@ -227,7 +222,10 @@ int main(int argc, char** argv) {
 		images[i]->data = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
 	}
 
-	#pragma omp parallel for simd num_threads(4)
+	PPMImage* imagesPPM[3];
+	#pragma omp parallel num_threads(8)
+	{
+	#pragma omp for schedule(dynamic,1)
 	for(int i = 0; i < 4; i++) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
 		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
@@ -235,10 +233,10 @@ int main(int argc, char** argv) {
 		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
 	}
 
-	PPMImage* imagesPPM[3];
-	#pragma omp parallel for num_threads(3)
+	#pragma omp for schedule(dynamic,1)
 	for(int i = 0; i < 3; i++) {
 		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
+	}
 	}
 
 	(argc > 1) ? writePPM("flower_tiny.ppm", imagesPPM[0]) : writeStreamPPM(stdout, imagesPPM[0]);
