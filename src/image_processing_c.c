@@ -142,7 +142,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 			factor = 2 * size + 1;
 		} 
 		else if(x < size) {
-			factor = x + size + 1;
+			factor = x + size + 2;
 		}
 		else {
 			factor = size + width - x;
