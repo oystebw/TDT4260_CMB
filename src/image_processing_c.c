@@ -22,9 +22,9 @@ typedef struct {
 } AccurateImage;
 
 
-void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
+void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size, const int width, const int height) {
 	#pragma simd
-	for(int y = offset; y < height; y += 4) {
+	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
 		v4Int sum = {0, 0, 0, 0};
@@ -59,9 +59,9 @@ void blurIterationHorizontalFirst(PPMPixel* in, v4Accurate* out, const int size,
 	}
 }
 
-void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
+void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	#pragma simd
-	for(int y = offset; y < height; y += 4) {
+	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -107,9 +107,9 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	}
 }
 
-void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
+void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	#pragma simd
-	for(int y = offset; y < height; y += 4) {
+	for(int y = 0; y < height; y++) {
 		const int yWidth = y * width;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -139,9 +139,9 @@ void blurIterationHorizontalTranspose(v4Accurate* in, v4Accurate* out, const int
 	}
 }
 
-void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height, const int offset) {
+void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	#pragma simd
-	for(int x = offset; x < width; x += 4) {
+	for(int x = 0; x < width; x++) {
 		const int xHeight = x * height;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -242,23 +242,18 @@ int main(int argc, char** argv) {
 	}
 
 	#pragma simd
+	int offset = 1;
 	for(int i = 0; i < 4; i++) {
-		for(int offset = 0; offset < 4; offset ++) {
-			blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height, offset);
-			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-			blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
-			blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-		}
-		for(int offset = 0; offset < 4; offset ++) {
-			blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
-		}
-		for(int offset = 0; offset < 4; offset ++) {
-			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-			blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
-			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-			blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height, offset);
-			blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height, offset);
-		}
+		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
+		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
+		blurIterationVertical(images[i]->data, scratches + i * size, sizes[i], width, height);
+		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
 	}
 
 	PPMImage* imagesPPM[3];
