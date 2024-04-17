@@ -209,14 +209,13 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	v4Accurate test[width * height];
+	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3);
 
-	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3 + sizeof(PPMPixel) * size);
-
+	PPMPixel data[1920 * 1200];
 	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
 	result->x = width;
 	result->y = height;
-	result->data = (PPMPixel*)(images + size * 3);
+	result->data = data;
 
 	#pragma GCC unroll 2
 	for(int i = 0; i < 2; ++i) {
