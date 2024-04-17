@@ -174,34 +174,43 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 	}
 }
 
+void imageDifference(PPMImage** restrict imageOut, const v4Accurate* restrict tinyImage, const v4Accurate* restrict smallImage, const v4Accurate* restrict mediumImage, const v4Accurate* restrict largeImage, const int width, const int height) {
 
-PPMImage* imageDifference(const AccurateImage* restrict imageInSmall, const AccurateImage* restrict imageInLarge) {
-	const int width = imageInSmall->x;
-	const int height = imageInSmall->y;
 	const int size = width * height;
 
-	PPMImage* restrict imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
-
-	imageOut->x = width;
-	imageOut->y = height;
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		for(int y = 0; y < height; ++y) {
-			v4Accurate diffvec = imageInLarge->data[xHeight + y] - imageInSmall->data[xHeight + y];
-			float red = diffvec[0];
-			float green = diffvec[1];
-			float blue = diffvec[2];
+			const v4Accurate diffTiny = smallImage[xHeight + y] - tinyImage[xHeight + y];
+			const v4Accurate diffSmall = mediumImage[xHeight + y] - smallImage[xHeight + y];
+			const v4Accurate diffMedium = largeImage[xHeight + y] - mediumImage[xHeight + y];
 
+			float red = diffTiny[0];
+			float green = diffTiny[1];
+			float blue = diffTiny[2];
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
+			imageOut[0]->data[y * width + x] = (PPMPixel){red, green, blue};
 
-			imageOut->data[y * width + x] = (PPMPixel){red, green, blue};
+			red = diffSmall[0];
+			green = diffSmall[1];
+			blue = diffSmall[2];
+			red = red < 0.0 ? red + 257.0 : red;
+			green = green < 0.0 ? green + 257.0 : green;
+			blue = blue < 0.0 ? blue + 257.0 : blue;
+			imageOut[1]->data[y * width + x] = (PPMPixel){red, green, blue};
+
+			red = diffMedium[0];
+			green = diffMedium[1];
+			blue = diffMedium[2];
+			red = red < 0.0 ? red + 257.0 : red;
+			green = green < 0.0 ? green + 257.0 : green;
+			blue = blue < 0.0 ? blue + 257.0 : blue;
+			imageOut[2]->data[y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
-	return imageOut;
 }
 
 int main(int argc, char** argv) {
@@ -214,28 +223,25 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	AccurateImage** restrict images = (AccurateImage** restrict)malloc(sizeof(AccurateImage*) * 4);
+	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
 	v4Accurate* restrict scratches = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
 
-	for(int i = 0; i < 4; ++i) {
-		images[i] = (AccurateImage* restrict)malloc(sizeof(AccurateImage));
-		images[i]->x = width;
-		images[i]->y = height;
-		images[i]->data = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
+	PPMImage** restrict imagesPPM = (PPMImage** restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*) * 3);
+	for(int i = 0; i < 3; ++i) {
+		imagesPPM[i] = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage));
+		imagesPPM[i]->x = width;
+		imagesPPM[i]->y = height;
+		imagesPPM[i]->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
 	}
-
-	PPMImage* imagesPPM[3];
 
 	for(int i = 0; i < 4; ++i) {
 		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
-		blurIterationHorizontal(scratches + i * size, images[i]->data, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images[i]->data, scratches + i * size, sizes[i], width, height);
-		blurIterationVertical(scratches + i * size, images[i]->data, sizes[i], width, height);
+		blurIterationHorizontal(scratches + i * size, images + i * size, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images + i * size, scratches + i * size, sizes[i], width, height);
+		blurIterationVertical(scratches + i * size, images + i * size, sizes[i], width, height);
 	}
 
-	for(int i = 0; i < 3; ++i) {
-		imagesPPM[i] = imageDifference(images[i], images[i + 1]);
-	}
+	imageDifference(imagesPPM, images + 0 * size, images + 1 * size, images + 2 * size, images + 3 * size, width, height);
 
 	(argc > 1) ? writePPM("flower_tiny.ppm", imagesPPM[0]) : writeStreamPPM(stdout, imagesPPM[0]);
 	(argc > 1) ? writePPM("flower_small.ppm", imagesPPM[1]) : writeStreamPPM(stdout, imagesPPM[1]);
