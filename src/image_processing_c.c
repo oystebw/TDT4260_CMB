@@ -174,7 +174,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 	}
 }
 
-void imageDifference(PPMImage** restrict imageOut, const v4Accurate* restrict tinyImage, const v4Accurate* restrict smallImage, const v4Accurate* restrict mediumImage, const v4Accurate* restrict largeImage, const int width, const int height) {
+void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict tinyImage, const v4Accurate* restrict smallImage, const v4Accurate* restrict mediumImage, const v4Accurate* restrict largeImage, const int width, const int height) {
 
 	const int size = width * height;
 
@@ -192,7 +192,7 @@ void imageDifference(PPMImage** restrict imageOut, const v4Accurate* restrict ti
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
-			imageOut[0]->data[y * width + x] = (PPMPixel){red, green, blue};
+			imageOut[y * width + x] = (PPMPixel){red, green, blue};
 
 			red = diffSmall[0];
 			green = diffSmall[1];
@@ -200,7 +200,7 @@ void imageDifference(PPMImage** restrict imageOut, const v4Accurate* restrict ti
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
-			imageOut[1]->data[y * width + x] = (PPMPixel){red, green, blue};
+			imageOut[size + y * width + x] = (PPMPixel){red, green, blue};
 
 			red = diffMedium[0];
 			green = diffMedium[1];
@@ -208,7 +208,7 @@ void imageDifference(PPMImage** restrict imageOut, const v4Accurate* restrict ti
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
-			imageOut[2]->data[y * width + x] = (PPMPixel){red, green, blue};
+			imageOut[2 * size + y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
 }
@@ -226,12 +226,15 @@ int main(int argc, char** argv) {
 	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 5);
 
 	PPMImage** restrict imagesPPM = (PPMImage** restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*) * 3);
+	PPMPixel* restrict pixelsPPM = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size * 3);
 	for(int i = 0; i < 3; ++i) {
 		imagesPPM[i] = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage));
 		imagesPPM[i]->x = width;
 		imagesPPM[i]->y = height;
-		imagesPPM[i]->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
 	}
+	imagesPPM[0]->data = pixelsPPM;
+	imagesPPM[1]->data = pixelsPPM + size;
+	imagesPPM[2]->data = pixelsPPM + 2 * size;
 
 	for(int i = 0; i < 4; ++i) {
 		blurIterationHorizontalFirst(image->data, images + 4 * size, sizes[i], width, height);
@@ -240,7 +243,7 @@ int main(int argc, char** argv) {
 		blurIterationVertical(images + 4 * size, images + i * size, sizes[i], width, height);
 	}
 
-	imageDifference(imagesPPM, images + 0 * size, images + 1 * size, images + 2 * size, images + 3 * size, width, height);
+	imageDifference(pixelsPPM, images + 0 * size, images + 1 * size, images + 2 * size, images + 3 * size, width, height);
 
 	(argc > 1) ? writePPM("flower_tiny.ppm", imagesPPM[0]) : writeStreamPPM(stdout, imagesPPM[0]);
 	(argc > 1) ? writePPM("flower_small.ppm", imagesPPM[1]) : writeStreamPPM(stdout, imagesPPM[1]);
