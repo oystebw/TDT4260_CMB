@@ -73,6 +73,7 @@ PPMImage* readStreamPPM(FILE* restrict fp) {
 	}
 
 	//read pixel data from file
+     setvbuf(fp, (char*)image->data, _IOFBF, 3 * image->x * image->y);
 	if (fread(image->data, 3 * image->x, image->y, fp) != image->y) {
 		fprintf(stderr, "Error loading image\n");
 		exit(1);
@@ -149,6 +150,7 @@ PPMImage* readPPM(const char* restrict filename)
     }
 
     //read pixel data from file
+    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y);
     if (fread(img->data, 3 * img->x, img->y, fp) != img->y) {
          fprintf(stderr, "Error loading image '%s'\n", filename);
          exit(1);
