@@ -105,7 +105,7 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 16) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
