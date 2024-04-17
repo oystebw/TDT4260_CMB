@@ -40,6 +40,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
+		#pragma unroll
 		for(int x = size + 1; x < width - size; ++x) {
 			PPMPixel pixelMinus = in[yWidth + x - size - 1];
 			PPMPixel pixelPlus = in[yWidth + x + size];
@@ -76,8 +77,8 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
+			#pragma unroll
 			for(int x = size + 1; x < width - size; ++x) {
-				
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
 				out[yWidth + x] = sum * divisor;
@@ -119,6 +120,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
+		#pragma unroll
 		for(int x = size + 1; x < width - size; ++x) {
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
@@ -152,6 +154,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
+			#pragma unroll
 			for(int y = size + 1; y < height - size; ++y) {
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
@@ -179,6 +182,7 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
+		#pragma unroll
 		for(int y = 0; y < height; ++y) {
 			const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 
