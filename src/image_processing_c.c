@@ -209,6 +209,8 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
+	v4Accurate test[width * height];
+
 	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3 + sizeof(PPMPixel) * size);
 
 	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
