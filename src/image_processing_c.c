@@ -239,24 +239,23 @@ int main(int argc, char** argv) {
 	transpose(another, scratch, width, height);
 	blurIterationVertical(another, scratch, sizes[1], width, height);
 	transpose(another, scratch, width, height);
-
 	imageDifference(result->data, one, another, width, height);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[2], width, height);
-	blurIterationHorizontal(images + 2 * size, images, sizes[2], width, height);
-	transpose(images, images + 2 * size, width, height);
-	
-	blurIterationVertical(images + 2 * size, images, sizes[2], width, height);
-	imageDifference(result->data, images + size, images, width, height);
+	blurIterationHorizontalFirst(image->data, one, sizes[2], width, height);
+	blurIterationHorizontal(one, scratch, sizes[2], width, height);
+	transpose(one, scratch, width, height);
+	blurIterationVertical(one, scratch, sizes[2], width, height);
+	transpose(one, scratch, width, height);
+	imageDifference(result->data, another, one, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[3], width, height);
-	blurIterationHorizontal(images + 2 * size, images + size, sizes[3], width, height);
-	transpose(images + size, images + 2 * size, width, height);
-	
-	blurIterationVertical(images + 2 * size, images + size, sizes[3], width, height);
-	imageDifference(result->data, images, images + size, width, height);
+	blurIterationHorizontalFirst(image->data, another, sizes[3], width, height);
+	blurIterationHorizontal(another, scratch, sizes[3], width, height);
+	transpose(another, scratch, width, height);
+	blurIterationVertical(another, scratch, sizes[3], width, height);
+	transpose(another, scratch, width, height);
+	imageDifference(result->data, one, another, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
