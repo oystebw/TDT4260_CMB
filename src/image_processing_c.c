@@ -181,7 +181,7 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 
-	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 16) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		#pragma GCC unroll 16
