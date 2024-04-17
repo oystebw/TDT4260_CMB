@@ -19,7 +19,7 @@ typedef struct {
 } AccurateImage;
 
 
-void blurIterationHorizontalFirst(const register PPMPixel* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
+static inline void blurIterationHorizontalFirst(const register PPMPixel* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -56,7 +56,7 @@ void blurIterationHorizontalFirst(const register PPMPixel* restrict in, register
 	}
 }
 
-void blurIterationHorizontal(register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
+static inline void blurIterationHorizontal(register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -100,7 +100,7 @@ void blurIterationHorizontal(register v4Accurate* restrict in, register v4Accura
 	}
 }
 
-void blurIterationHorizontalTranspose(const register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
+static inline void blurIterationHorizontalTranspose(const register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -132,7 +132,7 @@ void blurIterationHorizontalTranspose(const register v4Accurate* restrict in, re
 	}
 }
 
-void blurIterationVertical(register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
+static inline void blurIterationVertical(register v4Accurate* restrict in, register v4Accurate* restrict out, const int size, const int width, const int height) {
 	const register v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
@@ -175,7 +175,7 @@ void blurIterationVertical(register v4Accurate* restrict in, register v4Accurate
 }
 
 
-PPMImage* imageDifference(const register AccurateImage* restrict imageInSmall, const register AccurateImage* restrict imageInLarge) {
+static inline PPMImage* imageDifference(const register AccurateImage* restrict imageInSmall, const register AccurateImage* restrict imageInLarge) {
 	const int width = imageInSmall->x;
 	const int height = imageInSmall->y;
 	const int size = width * height;
