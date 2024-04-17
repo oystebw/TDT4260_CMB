@@ -20,6 +20,16 @@ typedef struct {
      v4Accurate* data;
 } AccurateImage;
 
+void transpose(v4Accurate* restrict in, v4Accurate* restrict out, const int width, const int height) {
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	for(int y = 0; y < height; ++y) {
+		for(int x = 0; x < width; ++x) {
+			const int yWidth = y * width;
+			const int xHeight = x * height;
+			out[xHeight + y] = in[yWidth + x];
+		}
+	}
+}
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
@@ -64,7 +74,7 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
-		for(int iteration = 0; iteration < 3; ++iteration) {
+		for(int iteration = 0; iteration < 4; ++iteration) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -96,11 +106,11 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 			in = out;
 			out = tmp;
 		}
-		// swap in and out
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
 	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
@@ -177,6 +187,10 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 		in = out;
 		out = tmp;
 	}
+	// swap
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
@@ -220,7 +234,8 @@ int main(int argc, char** argv) {
 	for(int i = 0; i < 2; ++i) {
 		blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[i], width, height);
 		blurIterationHorizontal(images + 2 * size, images + i * size, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images + i * size, images + 2 * size, sizes[i], width, height);
+		transpose(images + i * size, images + 2 * size, width, height);
+		// blurIterationHorizontalTranspose(images + i * size, images + 2 * size, sizes[i], width, height);
 		blurIterationVertical(images + 2 * size, images + i * size, sizes[i], width, height);
 	}
 	imageDifference(result->data, images, images + 1 * size, width, height);
@@ -228,14 +243,16 @@ int main(int argc, char** argv) {
 
 	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[2], width, height);
 	blurIterationHorizontal(images + 2 * size, images, sizes[2], width, height);
-	blurIterationHorizontalTranspose(images, images + 2 * size, sizes[2], width, height);
+	transpose(images, images + 2 * size, width, height);
+	// blurIterationHorizontalTranspose(images, images + 2 * size, sizes[2], width, height);
 	blurIterationVertical(images + 2 * size, images, sizes[2], width, height);
 	imageDifference(result->data, images + size, images, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[3], width, height);
 	blurIterationHorizontal(images + 2 * size, images + size, sizes[3], width, height);
-	blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[3], width, height);
+	transpose(images + size, images + 2 * size, width, height);
+	// blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[3], width, height);
 	blurIterationVertical(images + 2 * size, images + size, sizes[3], width, height);
 	imageDifference(result->data, images, images + size, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
