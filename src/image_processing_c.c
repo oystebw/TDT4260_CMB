@@ -184,7 +184,7 @@ PPMImage* imageDifference(const AccurateImage* restrict imageInSmall, const Accu
 	const int size = width * height;
 
 	PPMImage* restrict imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
+	imageOut->data = (PPMPixel* restrict)malloc(sizeof(PPMPixel) * size);
 
 	imageOut->x = width;
 	imageOut->y = height;
@@ -218,13 +218,13 @@ int main(int argc, char** argv) {
 	const int sizes[4] = {2, 3, 5, 8};
 
 	AccurateImage** restrict images = (AccurateImage** restrict)malloc(sizeof(AccurateImage*) * 4);
-	v4Accurate* restrict scratches = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
+	v4Accurate* restrict scratches = (v4Accurate* restrict)malloc(sizeof(v4Accurate) * size * 4);
 
 	for(int i = 0; i < 4; i++) {
 		images[i] = (AccurateImage* restrict)malloc(sizeof(AccurateImage));
 		images[i]->x = width;
 		images[i]->y = height;
-		images[i]->data = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
+		images[i]->data = (v4Accurate* restrict)malloc(sizeof(v4Accurate) * size);
 	}
 
 	PPMImage* imagesPPM[3];
