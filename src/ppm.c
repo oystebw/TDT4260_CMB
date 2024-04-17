@@ -215,13 +215,13 @@ void writePPM(const char* restrict filename, const PPMImage* restrict img)
 
 void changeColorPPM(PPMImage* restrict img)
 {
-    int i;
-    if(img){
-
-         for(i=0;i<img->x*img->y;i++){
+     int i;
+     if(img){
+          #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+          for(i=0;i<img->x*img->y;i++){
               img->data[i].red=RGB_COMPONENT_COLOR-img->data[i].red;
               img->data[i].green=RGB_COMPONENT_COLOR-img->data[i].green;
               img->data[i].blue=RGB_COMPONENT_COLOR-img->data[i].blue;
-         }
-    }
+          }
+     }
 }
