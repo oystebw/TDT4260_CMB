@@ -20,6 +20,19 @@ typedef struct {
      v4Accurate* data;
 } AccurateImage;
 
+void transpose(v4Accurate* restrict in, v4Accurate* restrict out, const int width, const int height) {
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	for(int y = 0; y < height; ++y) {
+		const int yWidth = y * width;
+		for(int x = 0; x < width; ++x) {
+			out[x * height + y] = in[yWidth+ x];
+		}
+	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
+}
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
@@ -64,7 +77,7 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
-		for(int iteration = 0; iteration < 3; ++iteration) {
+		for(int iteration = 0; iteration < 4; ++iteration) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -96,10 +109,6 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 			in = out;
 			out = tmp;
 		}
-		// swap in and out
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
 	}
 }
 
@@ -210,32 +219,42 @@ int main(int argc, char** argv) {
 	const int sizes[4] = {2, 3, 5, 8};
 
 	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3 + sizeof(PPMPixel) * size);
+	v4Accurate* restrict one = images;
+	v4Accurate* restrict another = images + size;
+	v4Accurate* restrict scratch = images + 2 * size;
 
 	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
 	result->x = width;
 	result->y = height;
 	result->data = (PPMPixel*)(images + size * 3);
 
-	#pragma GCC unroll 2
-	for(int i = 0; i < 2; ++i) {
-		blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[i], width, height);
-		blurIterationHorizontal(images + 2 * size, images + i * size, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images + i * size, images + 2 * size, sizes[i], width, height);
-		blurIterationVertical(images + 2 * size, images + i * size, sizes[i], width, height);
-	}
-	imageDifference(result->data, images, images + 1 * size, width, height);
+	blurIterationHorizontalFirst(image->data, one, sizes[0], width, height);
+	blurIterationHorizontal(one, scratch, sizes[0], width, height);
+	transpose(one, scratch, width, height);
+	blurIterationVertical(one, scratch, sizes[0], width, height);
+	transpose(one, scratch, width, height);
+
+	blurIterationHorizontalFirst(image->data, another, sizes[1], width, height);
+	blurIterationHorizontal(another, scratch, sizes[1], width, height);
+	transpose(another, scratch, width, height);
+	blurIterationVertical(another, scratch, sizes[1], width, height);
+	transpose(another, scratch, width, height);
+
+	imageDifference(result->data, one, another, width, height);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[2], width, height);
 	blurIterationHorizontal(images + 2 * size, images, sizes[2], width, height);
-	blurIterationHorizontalTranspose(images, images + 2 * size, sizes[2], width, height);
+	transpose(images, images + 2 * size, width, height);
+	
 	blurIterationVertical(images + 2 * size, images, sizes[2], width, height);
 	imageDifference(result->data, images + size, images, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[3], width, height);
 	blurIterationHorizontal(images + 2 * size, images + size, sizes[3], width, height);
-	blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[3], width, height);
+	transpose(images + size, images + 2 * size, width, height);
+	
 	blurIterationVertical(images + 2 * size, images + size, sizes[3], width, height);
 	imageDifference(result->data, images, images + size, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
