@@ -223,8 +223,7 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
-	v4Accurate* restrict scratches = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 4);
+	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 5);
 
 	PPMImage** restrict imagesPPM = (PPMImage** restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*) * 3);
 	for(int i = 0; i < 3; ++i) {
@@ -235,10 +234,10 @@ int main(int argc, char** argv) {
 	}
 
 	for(int i = 0; i < 4; ++i) {
-		blurIterationHorizontalFirst(image->data, scratches + i * size, sizes[i], width, height);
-		blurIterationHorizontal(scratches + i * size, images + i * size, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images + i * size, scratches + i * size, sizes[i], width, height);
-		blurIterationVertical(scratches + i * size, images + i * size, sizes[i], width, height);
+		blurIterationHorizontalFirst(image->data, images + 4 * size, sizes[i], width, height);
+		blurIterationHorizontal(images + 4 * size, images + i * size, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images + i * size, images + 4 * size, sizes[i], width, height);
+		blurIterationVertical(images + 4 * size, images + i * size, sizes[i], width, height);
 	}
 
 	imageDifference(imagesPPM, images + 0 * size, images + 1 * size, images + 2 * size, images + 3 * size, width, height);
