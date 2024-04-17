@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3")
+#pragma GCC optimize ("Ofast")
 
 #include <math.h>
 #include <string.h>
