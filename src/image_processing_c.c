@@ -94,6 +94,10 @@ void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, 
 			out = tmp;
 		}
 	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
@@ -126,6 +130,10 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			out[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
@@ -164,6 +172,10 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 			out = tmp;
 		}
 	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void blurIterationVerticalDiff(PPMPixel* restrict result, v4Accurate* restrict large, v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
@@ -268,6 +280,10 @@ void blurIterationVerticalDiff(PPMPixel* restrict result, v4Accurate* restrict l
 			result[y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
+	// swap
+	tmp = in;
+	in = out;
+	out = tmp;
 }
 
 int main(int argc, char** argv) {
@@ -280,38 +296,40 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3 + sizeof(PPMPixel) * size);
+	v4Accurate* restrict one = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
+	v4Accurate* restrict another = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
+	v4Accurate* restrict scratch = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size);
 
 	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
 	result->x = width;
 	result->y = height;
-	result->data = (PPMPixel*)(images + size * 3);
+	result->data = (PPMPixel*)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
 
 	// creating large image in images[0]
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[3], width, height);
-	blurIterationHorizontal(images + 2 * size, images, sizes[3], width, height);
-	blurIterationHorizontalTranspose(images, images + 2 * size, sizes[3], width, height);
-	blurIterationVertical(images + 2 * size, images, sizes[3], width, height);
+	blurIterationHorizontalFirst(image->data, one, sizes[3], width, height);
+	blurIterationHorizontal(one, scratch, sizes[3], width, height);
+	blurIterationHorizontalTranspose(one, scratch, sizes[3], width, height);
+	blurIterationVertical(one, scratch, sizes[3], width, height);
 
 	// creating medium image in images[1] and mediumPPM
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[2], width, height);
-	blurIterationHorizontal(images + 2 * size, images + size, sizes[2], width, height);
-	blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[2], width, height);
-	blurIterationVerticalDiff(result->data, images, images + 2 * size, images + size, sizes[2], width, height);
+	blurIterationHorizontalFirst(image->data, another, sizes[2], width, height);
+	blurIterationHorizontal(another, scratch, sizes[2], width, height);
+	blurIterationHorizontalTranspose(another, scratch, sizes[2], width, height);
+	blurIterationVerticalDiff(result->data, one, another, scratch, sizes[2], width, height);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	// creating small image in images[0] and smallPPM
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[1], width, height);
-	blurIterationHorizontal(images + 2 * size, images, sizes[1], width, height);
-	blurIterationHorizontalTranspose(images, images + 2 * size, sizes[1], width, height);
-	blurIterationVerticalDiff(result->data, images + size, images + 2 * size, images, sizes[1], width, height);
+	blurIterationHorizontalFirst(image->data, one, sizes[1], width, height);
+	blurIterationHorizontal(one, scratch, sizes[1], width, height);
+	blurIterationHorizontalTranspose(one, scratch, sizes[1], width, height);
+	blurIterationVerticalDiff(result->data, another, one, scratch, sizes[1], width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	// creating tiny image in images[1] and tinyPPM
-	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[0], width, height);
-	blurIterationHorizontal(images + 2 * size, images + size, sizes[0], width, height);
-	blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[0], width, height);
-	blurIterationVerticalDiff(result->data, images, images + 2 * size, images + size, sizes[0], width, height);
+	blurIterationHorizontalFirst(image->data, another, sizes[0], width, height);
+	blurIterationHorizontal(another, scratch, sizes[0], width, height);
+	blurIterationHorizontalTranspose(another, scratch, sizes[0], width, height);
+	blurIterationVerticalDiff(result->data, one, another, scratch, sizes[0], width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
