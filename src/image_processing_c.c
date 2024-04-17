@@ -174,41 +174,21 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 	}
 }
 
-void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict tinyImage, const v4Accurate* restrict smallImage, const v4Accurate* restrict mediumImage, const v4Accurate* restrict largeImage, const int width, const int height) {
-
-	const int size = width * height;
+void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		for(int y = 0; y < height; ++y) {
-			const v4Accurate diffTiny = smallImage[xHeight + y] - tinyImage[xHeight + y];
-			const v4Accurate diffSmall = mediumImage[xHeight + y] - smallImage[xHeight + y];
-			const v4Accurate diffMedium = largeImage[xHeight + y] - mediumImage[xHeight + y];
+			const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 
-			float red = diffTiny[0];
-			float green = diffTiny[1];
-			float blue = diffTiny[2];
+			float red = diff[0];
+			float green = diff[1];
+			float blue = diff[2];
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
 			imageOut[y * width + x] = (PPMPixel){red, green, blue};
-
-			red = diffSmall[0];
-			green = diffSmall[1];
-			blue = diffSmall[2];
-			red = red < 0.0 ? red + 257.0 : red;
-			green = green < 0.0 ? green + 257.0 : green;
-			blue = blue < 0.0 ? blue + 257.0 : blue;
-			imageOut[size + y * width + x] = (PPMPixel){red, green, blue};
-
-			red = diffMedium[0];
-			green = diffMedium[1];
-			blue = diffMedium[2];
-			red = red < 0.0 ? red + 257.0 : red;
-			green = green < 0.0 ? green + 257.0 : green;
-			blue = blue < 0.0 ? blue + 257.0 : blue;
-			imageOut[2 * size + y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
 }
@@ -223,30 +203,34 @@ int main(int argc, char** argv) {
 
 	const int sizes[4] = {2, 3, 5, 8};
 
-	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 5);
+	v4Accurate* restrict images = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * size * 3);
 
-	PPMImage** restrict imagesPPM = (PPMImage** restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*) * 3);
-	PPMPixel* restrict pixelsPPM = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size * 3);
-	for(int i = 0; i < 3; ++i) {
-		imagesPPM[i] = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage));
-		imagesPPM[i]->x = width;
-		imagesPPM[i]->y = height;
+	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
+	result->x = width;
+	result->y = height;
+	result->data = (PPMPixel*)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * size);
+
+	for(int i = 0; i < 2; ++i) {
+		blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[i], width, height);
+		blurIterationHorizontal(images + 2 * size, images + i * size, sizes[i], width, height);
+		blurIterationHorizontalTranspose(images + i * size, images + 2 * size, sizes[i], width, height);
+		blurIterationVertical(images + 2 * size, images + i * size, sizes[i], width, height);
 	}
-	imagesPPM[0]->data = pixelsPPM;
-	imagesPPM[1]->data = pixelsPPM + size;
-	imagesPPM[2]->data = pixelsPPM + 2 * size;
+	imageDifference(result->data, images, images + 1 * size, width, height);
+	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
-	for(int i = 0; i < 4; ++i) {
-		blurIterationHorizontalFirst(image->data, images + 4 * size, sizes[i], width, height);
-		blurIterationHorizontal(images + 4 * size, images + i * size, sizes[i], width, height);
-		blurIterationHorizontalTranspose(images + i * size, images + 4 * size, sizes[i], width, height);
-		blurIterationVertical(images + 4 * size, images + i * size, sizes[i], width, height);
-	}
+	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[2], width, height);
+	blurIterationHorizontal(images + 2 * size, images, sizes[2], width, height);
+	blurIterationHorizontalTranspose(images, images + 2 * size, sizes[2], width, height);
+	blurIterationVertical(images + 2 * size, images, sizes[2], width, height);
+	imageDifference(result->data, images + size, images, width, height);
+	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
-	imageDifference(pixelsPPM, images + 0 * size, images + 1 * size, images + 2 * size, images + 3 * size, width, height);
-
-	(argc > 1) ? writePPM("flower_tiny.ppm", imagesPPM[0]) : writeStreamPPM(stdout, imagesPPM[0]);
-	(argc > 1) ? writePPM("flower_small.ppm", imagesPPM[1]) : writeStreamPPM(stdout, imagesPPM[1]);
-	(argc > 1) ? writePPM("flower_medium.ppm", imagesPPM[2]) : writeStreamPPM(stdout, imagesPPM[2]);
+	blurIterationHorizontalFirst(image->data, images + 2 * size, sizes[3], width, height);
+	blurIterationHorizontal(images + 2 * size, images + size, sizes[3], width, height);
+	blurIterationHorizontalTranspose(images + size, images + 2 * size, sizes[3], width, height);
+	blurIterationVertical(images + 2 * size, images + size, sizes[3], width, height);
+	imageDifference(result->data, images, images + size, width, height);
+	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
