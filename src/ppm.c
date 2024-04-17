@@ -179,10 +179,13 @@ void writeStreamPPM(FILE* restrict fp, const PPMImage* restrict img) {
 	fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
 	// pixel data
-	fwrite(img->data, 3 * img->x, img->y, fp);
+	// fwrite(img->data, 3 * img->x, img->y, fp);
 
-     // const int size = img->x * img->y * 3;
-     // __putc_unlocked_body('\n', fp);
+    const unsigned char* restrict data = (const unsigned char* restrict)img->data;
+    const int size = img->x * img->y * 3;
+    for(int i = 0; i < size; i++){
+         __putc_unlocked_body(data[i], fp);
+    }
 }
 
 void writePPM(const char* restrict filename, const PPMImage* restrict img)
@@ -209,7 +212,12 @@ void writePPM(const char* restrict filename, const PPMImage* restrict img)
     fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
     // pixel data
-    fwrite(img->data, 3 * img->x, img->y, fp);
+    //fwrite(img->data, 3 * img->x, img->y, fp);
+    const unsigned char* restrict data = (const unsigned char* restrict)img->data;
+    const int size = img->x * img->y * 3;
+    for(int i = 0; i < size; i++){
+         __putc_unlocked_body(data[i], fp);
+    }
     fclose(fp);
 }
 
