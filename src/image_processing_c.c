@@ -268,10 +268,6 @@ void blurIterationVerticalDiff(PPMPixel* restrict result, v4Accurate* restrict l
 			result[y * width + x] = (PPMPixel){red, green, blue};
 		}
 	}
-	// swap
-	tmp = in;
-	in = out;
-	out = tmp;
 }
 
 int main(int argc, char** argv) {
