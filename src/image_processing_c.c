@@ -195,7 +195,7 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 
 int main(int argc, char** argv) {
 
-    const PPMImage* restrict image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
+    PPMImage* restrict image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
 
 	const int width = image->x;
 	const int height = image->y;
