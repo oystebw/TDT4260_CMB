@@ -124,6 +124,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
+			__builtin_prefetch(&out[(x + 4) * height + y], 1, 3);
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * divisor;
@@ -141,7 +142,6 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
-		__builtin_prefetch(&in[xHeight + height], 0, 3);
 		for(int iteration = 0; iteration < 5; ++iteration) {
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
