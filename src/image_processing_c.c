@@ -9,7 +9,7 @@
 
 #define CACHELINESIZE 16
 #define BLOCKSIZE 16
-#define PF_OFFSET 8
+#define PF_OFFSET 16
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
