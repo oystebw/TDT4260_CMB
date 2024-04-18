@@ -8,7 +8,7 @@
 #include "ppm.h"
 
 #define CACHELINESIZE 16
-#define BLOCKSIZE 8
+#define BLOCKSIZE 4
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -181,8 +181,8 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 }
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-
+	
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
