@@ -185,16 +185,24 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		#pragma GCC unroll 16
-		for(int y = 0; y < height; ++y) {
+		for(int y = 0; y < height; y += 2) {
 			const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
+			const v4Accurate diff2 = large[xHeight + y + 1] - small[xHeight + y + 1];
 
 			float red = diff[0];
 			float green = diff[1];
 			float blue = diff[2];
+			float red2 = diff2[0];
+			float green2 = diff2[1];
+			float blue2 = diff2[2];
 			red = red < 0.0 ? red + 257.0 : red;
 			green = green < 0.0 ? green + 257.0 : green;
 			blue = blue < 0.0 ? blue + 257.0 : blue;
+			red2 = red2 < 0.0 ? red2 + 257.0 : red2;
+			green2 = green2 < 0.0 ? green2 + 257.0 : green2;
+			blue2 = blue2 < 0.0 ? blue2 + 257.0 : blue2;
 			imageOut[y * width + x] = (PPMPixel){red, green, blue};
+			imageOut[(y + 1) * width + x] = (PPMPixel){red2, green2, blue2};
 		}
 	}
 }
