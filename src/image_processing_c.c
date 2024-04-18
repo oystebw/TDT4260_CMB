@@ -184,8 +184,8 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 	
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
-		for(int xx = 0; xx < width; xx += 32) {
-			for(int x = xx; x < xx + 32; ++x) {
+		for(int xx = 0; xx < width; xx += 64) {
+			for(int x = xx; x < xx + 64; ++x) {
 				const int xHeight = x * height;
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
