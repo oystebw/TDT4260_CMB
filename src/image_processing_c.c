@@ -31,30 +31,25 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 		v4Int sum = {0, 0, 0, 0};
 
 		for(int x = 0; x <= size; ++x) {
-			// PPMPixel pixel = in[yWidth + x];
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0};
 		}
 
 		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; ++x) {
-			// PPMPixel pixel = in[yWidth + x + size];
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			// PPMPixel pixelMinus = in[yWidth + x - size - 1];
-			// PPMPixel pixelPlus = in[yWidth + x + size];
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
-			__builtin_prefetch(&in[yWidth + x + size + 16], 0, 3);
+			!(x % 16) ? __builtin_prefetch(&in[yWidth + x + size + 16], 0, 3) : (void)0;
 		}
 
 		for(int x = width - size; x < width; ++x) {
-			// PPMPixel pixel = in[yWidth + x - size - 1];
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
@@ -86,7 +81,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
 				out[yWidth + x] = sum * divisor;
-				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
+				!(x % 4) ? __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3) : (void)0;
 			}
 
 			for(int x = width - size; x < width; ++x) {
@@ -130,7 +125,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * divisor;
-			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
+			!(x % 4) ? __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3) : (void)0;
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -164,7 +159,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * divisor;
-				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
+				!(y % 4) ? __builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3) : (void)0;
 			}
 
 			for(int y = height - size; y < height; ++y) {
