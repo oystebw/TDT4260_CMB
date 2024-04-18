@@ -30,30 +30,30 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 		v4Int sum = {0, 0, 0, 0};
 
 		for(int x = 0; x <= size; ++x) {
-			PPMPixel pixel = in[yWidth + x];
-			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
+			// PPMPixel pixel = in[yWidth + x];
+			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0};
 		}
 
 		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
 
 		for(int x = 1; x <= size; ++x) {
-			PPMPixel pixel = in[yWidth + x + size];
-			sum += (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
+			// PPMPixel pixel = in[yWidth + x + size];
+			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			PPMPixel pixelMinus = in[yWidth + x - size - 1];
-			PPMPixel pixelPlus = in[yWidth + x + size];
-			sum -= (v4Int){pixelMinus.red, pixelMinus.green, pixelMinus.blue, 0.0};
-			sum += (v4Int){pixelPlus.red, pixelPlus.green, pixelPlus.blue, 0.0};
+			// PPMPixel pixelMinus = in[yWidth + x - size - 1];
+			// PPMPixel pixelPlus = in[yWidth + x + size];
+			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
+			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
-			PPMPixel pixel = in[yWidth + x - size - 1];
-			sum -= (v4Int){pixel.red, pixel.green, pixel.blue, 0.0};
+			// PPMPixel pixel = in[yWidth + x - size - 1];
+			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 		}
 	}
@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
 	const int height = image->y;
 	const int size = width * height;
 
-	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
+	PPMImage* restrict result = (PPMImage* restrict)malloc(sizeof(PPMImage*));
 	result->x = width;
 	result->y = height;
 	result->data = result_data;
