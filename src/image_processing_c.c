@@ -49,6 +49,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
+			__builtin_prefetch(&in[yWidth + x + 16], 0, 3);
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -84,6 +85,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
 				out[yWidth + x] = sum * divisor;
+				__builtin_prefetch(&in[yWidth + x + 16], 0, 3);
 			}
 
 			for(int x = width - size; x < width; ++x) {
@@ -161,6 +163,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * divisor;
+				__builtin_prefetch(&in[xHeight + y + 16], 0, 3);
 			}
 
 			for(int y = height - size; y < height; ++y) {
@@ -186,6 +189,8 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
+				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
