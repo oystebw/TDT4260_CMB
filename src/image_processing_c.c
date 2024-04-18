@@ -183,20 +183,18 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+
 	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
 				for(int y = yy; y < yy + BLOCKSIZE && y < height; ++y) {
-					const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
-
-					float red = diff[0];
-					float green = diff[1];
-					float blue = diff[2];
-					red = red < 0.0 ? red + 257.0 : red;
-					green = green < 0.0 ? green + 257.0 : green;
-					blue = blue < 0.0 ? blue + 257.0 : blue;
-					imageOut[y * width + x] = (PPMPixel){red, green, blue};
+					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
+					imageOut[y * width + x] = (PPMPixel){
+						diff[0] = diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+						diff[2] = diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+					};
 				}
 			}
 		}
