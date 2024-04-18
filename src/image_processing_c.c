@@ -8,6 +8,7 @@
 #include "ppm.h"
 
 #define CACHELINESIZE 16
+#define BLOCKSIZE 4
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -180,29 +181,24 @@ void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, co
 }
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
+	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 
-	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int x = 0; x < width; ++x) {
-		const int xHeight = x * height;
-		#pragma GCC unroll 16
-		for(int y = 0; y < height; y += 2) {
-			const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
-			const v4Accurate diff2 = large[xHeight + y + 1] - small[xHeight + y + 1];
+	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
+		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
+			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
+				const int xHeight = x * height;
+				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
+					const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 
-			float red = diff[0];
-			float green = diff[1];
-			float blue = diff[2];
-			float red2 = diff2[0];
-			float green2 = diff2[1];
-			float blue2 = diff2[2];
-			red = red < 0.0 ? red + 257.0 : red;
-			green = green < 0.0 ? green + 257.0 : green;
-			blue = blue < 0.0 ? blue + 257.0 : blue;
-			red2 = red2 < 0.0 ? red2 + 257.0 : red2;
-			green2 = green2 < 0.0 ? green2 + 257.0 : green2;
-			blue2 = blue2 < 0.0 ? blue2 + 257.0 : blue2;
-			imageOut[y * width + x] = (PPMPixel){red, green, blue};
-			imageOut[(y + 1) * width + x] = (PPMPixel){red2, green2, blue2};
+					float red = diff[0];
+					float green = diff[1];
+					float blue = diff[2];
+					red = red < 0.0 ? red + 257.0 : red;
+					green = green < 0.0 ? green + 257.0 : green;
+					blue = blue < 0.0 ? blue + 257.0 : blue;
+					imageOut[y * width + x] = (PPMPixel){red, green, blue};
+				}
+			}
 		}
 	}
 }
