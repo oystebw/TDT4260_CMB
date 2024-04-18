@@ -1,4 +1,5 @@
 #pragma GCC optimize ("Ofast")
+__attribute__((optimize("prefetch-loop-arrays")))
 
 #include <math.h>
 #include <string.h>
@@ -41,11 +42,13 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 		}
 
 		#pragma GCC unroll 16
-		for(int x = size + 1; x < width - size; ++x) {
-			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
-			(!(x % 16)) ? __builtin_prefetch(&in[yWidth + x + size + 43], 0, 1) : (void)0;
+		for(int xx = size + 1; xx < width - size; xx += 16) {
+			__builtin_prefetch(&in[yWidth + xx + size] + 64, 0, 1);
+			for(int x = xx; x < xx + 16 && x < width - size; ++x) {
+				sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
+				sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
+				out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
+			}
 		}
 
 		for(int x = width - size; x < width; ++x) {
