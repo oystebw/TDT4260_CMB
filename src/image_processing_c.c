@@ -141,8 +141,9 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
+		v4Accurate junk = in[xHeight + height];
+		v4Accurate moreJunk = in[xHeight + 2 * height];
 		for(int iteration = 0; iteration < 5; ++iteration) {
-			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
