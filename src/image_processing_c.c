@@ -12,7 +12,7 @@
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
 
-PPMPixel data[1920 * 1200];
+PPMPixel result_data[1920 * 1200];
 v4Accurate one[1920 * 1200];
 v4Accurate two[1920 * 1200];
 v4Accurate scratch[1920 * 1200];
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
 	PPMImage* restrict result = (PPMImage* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMImage*));
 	result->x = width;
 	result->y = height;
-	result->data = data;
+	result->data = result_data;
 
 	blurIterationHorizontalFirst(image->data,  scratch,  2, width, height);
 	blurIterationHorizontal( scratch,  one,  2, width, height);
@@ -222,21 +222,21 @@ int main(int argc, char** argv) {
 	blurIterationHorizontalTranspose( two,  scratch,  3, width, height);
 	blurIterationVertical( scratch,  two,  3, width, height);
 
-	imageDifference(data,  one,  two, width, height);
+	imageDifference(result_data,  one,  two, width, height);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  5, width, height);
 	blurIterationHorizontal( scratch,  one,  5, width, height);
 	blurIterationHorizontalTranspose( one,  scratch,  5, width, height);
 	blurIterationVertical( scratch,  one,  5, width, height);
-	imageDifference(data,  two,  one, width, height);
+	imageDifference(result_data,  two,  one, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  8, width, height);
 	blurIterationHorizontal( scratch,  two,  8, width, height);
 	blurIterationHorizontalTranspose( two,  scratch,  8, width, height);
 	blurIterationVertical( scratch,  two,  8, width, height);
-	imageDifference(data,  one,  two, width, height);
+	imageDifference(result_data,  one,  two, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
