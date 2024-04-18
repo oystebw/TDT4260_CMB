@@ -195,7 +195,6 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
 						diff[2] = diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
 					};
-					__builtin_prefetch(&imageOut[(y + 2) * width + x], 1, 1);
 				}
 			}
 		}
