@@ -124,7 +124,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&out[(x + 4) * height + y], 1, 3);
+			__builtin_prefetch(&out[(x + 8) * height + y], 1, 0);
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * divisor;
