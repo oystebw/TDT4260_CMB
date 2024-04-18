@@ -8,7 +8,7 @@
 #include "ppm.h"
 
 #define CACHELINESIZE 16
-#define BLOCKSIZE 32
+#define BLOCKSIZE 16
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -184,11 +184,11 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 	
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 
-	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
-		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
+	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
+		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				for(int y = yy; y < yy + BLOCKSIZE && y < height; ++y) {
+				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
 						diff[0] = diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
