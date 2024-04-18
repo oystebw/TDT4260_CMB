@@ -8,7 +8,7 @@
 #include "ppm.h"
 
 #define CACHELINESIZE 16
-#define BLOCKSIZE 16
+#define BLOCKSIZE 32
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -187,7 +187,7 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
+				for(int y = yy; y < yy + BLOCKSIZE && y < height; ++y) {
 					const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 
 					float red = diff[0];
