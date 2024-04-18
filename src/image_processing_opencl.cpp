@@ -181,9 +181,7 @@ public:
 
         queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize, image->data, nullptr, &events.back().second);
 
-        for(int i = 0; i < 5; i++){
-            blurIteration(image, buffer1, buffer2, size);
-        }
+        blurIteration(image, buffer1, buffer2, size);
 
         AccurateImage* result = copyAccurateImage(image, true, false);
 
