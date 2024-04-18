@@ -185,8 +185,8 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				__builtin_prefetch(&large[xHeight + height + yy], 0, 2);
-				__builtin_prefetch(&small[xHeight + height + yy], 0, 2);
+				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
@@ -195,6 +195,7 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
 						diff[2] = diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
 					};
+					__builtin_prefetch(&imageOut[(y + 2) * width + x], 1, 1);
 				}
 			}
 		}
