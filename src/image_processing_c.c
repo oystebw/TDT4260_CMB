@@ -129,7 +129,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * divisor;
-			__builtin_prefetch(&in[yWidth + x + 16], 0, 3);
+			//__builtin_prefetch(&in[yWidth + x + 16], 0, 3);
 		}
 
 		for(int x = width - size; x < width; ++x) {
