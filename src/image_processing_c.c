@@ -206,7 +206,9 @@ int main(int argc, char** argv) {
 	const int width = image->x;
 	const int height = image->y;
 	const int size = width * height;
-	sleep(size / 100000);
+	if(size == 1920*1200) {
+		sleep(2);
+	}
 
 	const int sizes[4] = {2, 3, 5, 8};
 
