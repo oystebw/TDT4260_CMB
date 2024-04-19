@@ -197,7 +197,7 @@ void errorAndExit(string error_message) {
 
 void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
@@ -214,9 +214,9 @@ void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const i
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
-		// #pragma GCC unroll 16
+		#pragma GCC unroll 16
 		for(int xx = size + 1; xx < width - size; xx += 16) {
-			// __builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 1);
+			__builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 1);
 			for(int x = xx; x < xx + 16 && x < width - size; ++x) {
 				sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0};
 				sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0};
@@ -233,7 +233,7 @@ void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const i
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 		for(int iteration = 0; iteration < 3; ++iteration) {
@@ -251,9 +251,9 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 			}
 
-			// #pragma GCC unroll 16
+			#pragma GCC unroll 16
 			for(int xx = size + 1; xx < width - size; xx += 4) {
-				// __builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
+				__builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
 				for(int x = xx; x < xx + 4 && x < width - size; ++x) {
 					sum -= in[yWidth + x - size - 1];
 					sum += in[yWidth + x + size];
@@ -280,7 +280,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
@@ -297,9 +297,9 @@ void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, c
 			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
 		}
 
-		// #pragma GCC unroll 16
+		#pragma GCC unroll 16
 		for(int xx = size + 1; xx < width - size; xx += 4) {
-			// __builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
+			__builtin_prefetch(&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
 			for(int x = xx; x < xx + 4 && x < width - size; ++x) {				
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
@@ -316,7 +316,7 @@ void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, c
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		for(int iteration = 0; iteration < 5; ++iteration) {
@@ -333,9 +333,9 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
 			}
 
-			// #pragma GCC unroll 16
+			#pragma GCC unroll 16
 			for(int yy = size + 1; yy < height - size; yy += 4) {
-				// __builtin_prefetch(&in[xHeight + yy + size] + PF_OFFSET, 0, 2);
+				__builtin_prefetch(&in[xHeight + yy + size] + PF_OFFSET, 0, 2);
 				for(int y = yy; y < yy + 4 && y < height - size; ++y) {
 					sum -= in[xHeight + y - size - 1];
 					sum += in[xHeight + y + size];
@@ -361,14 +361,14 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 void imageDifference(PPMPixel*  imageOut, const v4Accurate*  small, const v4Accurate*  large, const int width, const int height) {
 	
-	// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				// __builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				// __builtin_prefetch(&small[xHeight + height + yy], 0, 3);
-				// #pragma GGC unroll 16
+				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
+				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
