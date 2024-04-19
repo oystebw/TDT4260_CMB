@@ -196,7 +196,7 @@ void errorAndExit(string error_message) {
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+	const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 0.0f};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
@@ -207,12 +207,12 @@ void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const i
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0};
 		}
 
-		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		out[yWidth + 0] = (v4Accurate){(float)sum[0], (float)sum[1], (float)sum[2], 0.0f} / (v4Accurate){(float)size + 1, (float)size + 1, (float)size + 1, 0.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
-		}
+			out[yWidth + x] = (v4Accurate){(float)sum[0], (float)sum[1], (float)sum[2], 0.0f} / (v4Accurate){(float)size + x + 1, (float)size + x + 1, (float)size + x + 1, 0.0f};
+		} 
 
 		#pragma GCC unroll 16
 		for(int xx = size + 1; xx < width - size; xx += 16) {
@@ -220,19 +220,19 @@ void blurIterationHorizontalFirst(const PPMPixel*  in, v4Accurate*  out, const i
 			for(int x = xx; x < xx + 16 && x < width - size; ++x) {
 				sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0};
 				sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0};
-				out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
+				out[yWidth + x] = (v4Accurate){(float)sum[0], (float)sum[1], (float)sum[2], 0.0f} * divisor;
 			}
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			out[yWidth + x] = (v4Accurate){(float)sum[0], (float)sum[1], (float)sum[2], 0.0f} / (v4Accurate){(float)size + width - x, (float)size + width - x, (float)size + width - x, 0.0f};
 		}
 	}
 }
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+	const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 0.0f};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
@@ -244,11 +244,11 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 				sum += in[yWidth + x];
 			}
 
-			out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			out[yWidth + 0] = sum / (v4Accurate){(float)size + 1, (float)size + 1, (float)size + 1, 0.0f};
 
 			for(int x = 1; x <= size; ++x) {
 				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+				out[yWidth + x] = sum / (v4Accurate){(float)size + x + 1, (float)size + x + 1, (float)size + x + 1, 0.0f};
 			}
 
 			#pragma GCC unroll 16
@@ -263,7 +263,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 			for(int x = width - size; x < width; ++x) {
 				sum -= in[yWidth + x - size - 1];
-				out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+				out[yWidth + x] = sum / (v4Accurate){(float)size + width - x, (float)size + width - x, (float)size + width - x, 0.0f};
 			}
 
 			// swap in and out
@@ -279,7 +279,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+	const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 0.0f};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
@@ -290,11 +290,11 @@ void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, c
 			sum += in[yWidth + x];
 		}
 
-		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+		out[0 * height + y] = sum / (v4Accurate){(float)size + 1, (float)size + 1, (float)size + 1, 0.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, size + x + 1};
+			out[x * height + y] = sum / (v4Accurate){(float)size + x + 1, (float)size + x + 1, (float)size + x + 1, 0.0f};
 		}
 
 		#pragma GCC unroll 16
@@ -309,13 +309,13 @@ void blurIterationHorizontalTranspose(const v4Accurate*  in, v4Accurate*  out, c
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= in[yWidth + x - size - 1];
-			out[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
+			out[x * height + y] = sum / (v4Accurate){(float)size + width - x, (float)size + width - x, (float)size + width - x, 0.0f};
 		}
 	}
 }
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
+	const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 0.0f};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
@@ -326,11 +326,11 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				sum += in[xHeight + y];
 			}
 
-			out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, size + 1};
+			out[xHeight + 0] = sum / (v4Accurate){(float)size + 1, (float)size + 1, (float)size + 1, 0.0f};
 
 			for(int y = 1; y <= size; ++y) {
 				sum += in[xHeight + y + size];
-				out[xHeight + y] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, y + size + 1};
+				out[xHeight + y] = sum / (v4Accurate){(float)y + size + 1, (float)y + size + 1, (float)y + size + 1, 0.0f};
 			}
 
 			#pragma GCC unroll 16
@@ -345,7 +345,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 			for(int y = height - size; y < height; ++y) {
 				sum -= in[xHeight + y - size - 1];
-				out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
+				out[xHeight + y] = sum / (v4Accurate){(float)size + height - y, (float)size + height - y, (float)size + height - y, 0.0f};
 			}
 			// swap
 			v4Accurate* tmp = in;
@@ -372,10 +372,10 @@ void imageDifference(PPMPixel*  imageOut, const v4Accurate*  small, const v4Accu
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
-						diff[0] = diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
-						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
-						diff[2] = diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
-					};
+						diff[0] < 0.0f ? diff[0] + 257 : diff[0],
+						diff[1] < 0.0f ? diff[1] + 257 : diff[1],
+						diff[2] < 0.0f ? diff[2] + 257 : diff[2]
+					}; 
 				}
 			}
 		}
