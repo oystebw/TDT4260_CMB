@@ -1,6 +1,6 @@
 #pragma GCC optimize ("-funsafe-math-optimizations")
 #pragma GCC optimize ("Ofast")
-#pragma GCC tune ("cortex-a15.cortex-a7")
+#pragma GCC tune ("cortex-a15")
 __attribute__((optimize("prefetch-loop-arrays")))
 
 #include <math.h>
