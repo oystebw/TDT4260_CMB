@@ -33,23 +33,23 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
 		}
 
-		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[(yWidth + 0) * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[(yWidth + x) * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
+			out[(yWidth + x) * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			out[yWidth + x * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[(yWidth + x) * 3] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
@@ -64,26 +64,26 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int x = 0; x <= size; ++x) {
-				sum += in[yWidth + x * 3];
+				sum += in[(yWidth + x) * 3];
 			}
 
-			out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+			out[(yWidth + 0) * 3] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 			for(int x = 1; x <= size; ++x) {
-				sum += in[yWidth + x * 3 + size];
-				out[yWidth + x * 3] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+				sum += in[(yWidth + x + size) * 3];
+				out[(yWidth + x) * 3] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 			}
 
 			#pragma GCC unroll 16
 			for(int x = size + 1; x < width - size; ++x) {
-				sum -= in[yWidth + x * 3 - size - 1];
-				sum += in[yWidth + x * 3 + size];
-				out[yWidth + x * 3] = sum * divisor;
+				sum -= in[(yWidth + x - size - 1) * 3];
+				sum += in[(yWidth + x + size) * 3];
+				out[(yWidth + x) * 3] = sum * divisor;
 			}
 
 			for(int x = width - size; x < width; ++x) {
-				sum -= in[yWidth + x * 3 - size - 1];
-				out[yWidth + x * 3] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+				sum -= in[(yWidth + x - size - 1) * 3];
+				out[(yWidth + x) * 3] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 			}
 
 			// swap in and out
@@ -107,26 +107,26 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 		for(int x = 0; x <= size; ++x) {
-			sum += in[yWidth + x * 3];
+			sum += in[(yWidth + x) * 3];
 		}
 
-		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[(0 * height + y) * 3] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
-			sum += in[yWidth + x * 3 + size];
-			out[x * 3 * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			sum += in[(yWidth + x + size) * 3];
+			out[(x * height + y) * 3] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {			
-			sum -= in[yWidth + x * 3 - size - 1];
-			sum += in[yWidth + x * 3 + size];
-			out[x * 3 * height + y] = sum * divisor;
+			sum -= in[(yWidth + x - size - 1) * 3];
+			sum += in[(yWidth + x + size) * 3];
+			out[(x * height + y) * 3] = sum * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
-			sum -= in[yWidth + x * 3 - size - 1];
-			out[x * 3 * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			sum -= in[(yWidth + x - size - 1) * 3];
+			out[(x * height + y) * 3] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
@@ -140,26 +140,26 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
-				sum += in[xHeight + y * 3];
+				sum += in[(xHeight + y) * 3];
 			}
 
-			out[xHeight + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+			out[(xHeight + 0) * 3] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 			for(int y = 1; y <= size; ++y) {
-				sum += in[xHeight + y * 3 + size];
-				out[xHeight + y * 3] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
+				sum += in[(xHeight + y + size) * 3];
+				out[(xHeight + y) * 3] = sum / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
 			}
 
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				sum -= in[xHeight + y * 3 - size - 1];
-				sum += in[xHeight + y * 3 + size];
-				out[xHeight + y * 3] = sum * divisor;
+				sum -= in[(xHeight + y - size - 1) * 3];
+				sum += in[(xHeight + y + size) * 3];
+				out[(xHeight + y) * 3] = sum * divisor;
 			}
 
 			for(int y = height - size; y < height; ++y) {
-				sum -= in[xHeight + y * 3 - size - 1];
-				out[xHeight + y * 3] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
+				sum -= in[(xHeight + y - size - 1) * 3];
+				out[(xHeight + y) * 3] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
 			}
 			// swap
 			v4Accurate* tmp = in;
@@ -180,11 +180,11 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				__builtin_prefetch((float*)&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch((float*)&small[xHeight + height + yy], 0, 3);
+				__builtin_prefetch((float*)&large[(xHeight + height + yy) * 3], 0, 3);
+				__builtin_prefetch((float*)&small[(xHeight + height + yy) * 3], 0, 3);
 				#pragma GGC unroll 8
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-					v4Accurate diff = large[xHeight + y * 3] - small[xHeight + y * 3];
+					v4Accurate diff = large[(xHeight + y) * 3] - small[(xHeight + y) * 3];
 					imageOut[y * width + x] = (PPMPixel){
 						diff[0] = diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
