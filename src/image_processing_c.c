@@ -1,4 +1,3 @@
-#pragma GCC optimize ("-funsafe-math-optimizations")
 #pragma GCC optimize ("Ofast")
 #pragma GCC tune ("cortex-a15")
 __attribute__((optimize("prefetch-loop-arrays")))
@@ -44,13 +43,10 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 		}
 
 		#pragma GCC unroll 16
-		for(int xx = size + 1; xx < width - size; xx += 16) {
-			__builtin_prefetch((float*)&in[yWidth + xx + size] + PF_OFFSET, 0, 1);
-			for(int x = xx; x < xx + 16 && x < width - size; ++x) {
-				sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-				sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-				out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
-			}
+		for(int x = size + 1; x < width - size; ++x) {
+			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
+			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -81,13 +77,10 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 			}
 
 			#pragma GCC unroll 16
-			for(int xx = size + 1; xx < width - size; xx += 4) {
-				__builtin_prefetch((float*)&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
-				for(int x = xx; x < xx + 4 && x < width - size; ++x) {
-					sum -= in[yWidth + x - size - 1];
-					sum += in[yWidth + x + size];
-					out[yWidth + x] = sum * divisor;
-				}
+			for(int x = size + 1; x < width - size; ++x) {
+				sum -= in[yWidth + x - size - 1];
+				sum += in[yWidth + x + size];
+				out[yWidth + x] = sum * divisor;
 			}
 
 			for(int x = width - size; x < width; ++x) {
@@ -127,13 +120,10 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 		}
 
 		#pragma GCC unroll 16
-		for(int xx = size + 1; xx < width - size; xx += 4) {
-			__builtin_prefetch((float*)&in[yWidth + xx + size] + PF_OFFSET, 0, 2);
-			for(int x = xx; x < xx + 4 && x < width - size; ++x) {				
-				sum -= in[yWidth + x - size - 1];
-				sum += in[yWidth + x + size];
-				out[x * height + y] = sum * divisor;
-			}
+		for(int x = size + 1; x < width - size; ++x) {			
+			sum -= in[yWidth + x - size - 1];
+			sum += in[yWidth + x + size];
+			out[x * height + y] = sum * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -163,13 +153,10 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 			}
 
 			#pragma GCC unroll 16
-			for(int yy = size + 1; yy < height - size; yy += 4) {
-				__builtin_prefetch((float*)&in[xHeight + yy + size] + PF_OFFSET, 0, 2);
-				for(int y = yy; y < yy + 4 && y < height - size; ++y) {
-					sum -= in[xHeight + y - size - 1];
-					sum += in[xHeight + y + size];
-					out[xHeight + y] = sum * divisor;
-				}
+			for(int y = size + 1; y < height - size; ++y) {
+				sum -= in[xHeight + y - size - 1];
+				sum += in[xHeight + y + size];
+				out[xHeight + y] = sum * divisor;
 			}
 
 			for(int y = height - size; y < height; ++y) {
@@ -195,8 +182,6 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				__builtin_prefetch((float*)&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch((float*)&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
