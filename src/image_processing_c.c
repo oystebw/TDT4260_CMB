@@ -25,7 +25,7 @@ v4Accurate two[1920 * 1200];
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	// #pragma omp parallel for schedule(dynamic, 16) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
@@ -58,7 +58,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	// #pragma omp parallel for schedule(dynamic, 16) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 		for(int iteration = 0; iteration < 3; ++iteration) {
@@ -102,7 +102,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	// #pragma omp parallel for schedule(dynamic, 16) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
@@ -135,7 +135,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	// #pragma omp parallel for schedule(dynamic, 16) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		for(int iteration = 0; iteration < 5; ++iteration) {
@@ -177,13 +177,13 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	
-	// #pragma omp parallel for schedule(dynamic, 16) num_threads(8)
+	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				const int xHeight = x * height;
-				// __builtin_prefetch((float*)&large[(xHeight + height + yy) * 3], 0, 3);
-				// __builtin_prefetch((float*)&small[(xHeight + height + yy) * 3], 0, 3);
+				__builtin_prefetch((float*)&large[xHeight + height + yy], 0, 3);
+				__builtin_prefetch((float*)&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 8
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
