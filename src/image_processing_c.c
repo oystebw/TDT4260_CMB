@@ -37,23 +37,23 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, Data* restrict da
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
 		}
 
-		data[yWidth + 0].data[0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		data[yWidth + 0].data[0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
+			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			data[yWidth + x].data[0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
@@ -95,6 +95,10 @@ void blurIterationHorizontal(Data* data, const int size, const int width, const 
 			index = scratchIndex;
 			scratchIndex = temp;
 		}
+		// swap scratchIndex and index
+		int temp = index;
+		index = scratchIndex;
+		scratchIndex = temp;
 	}
 }
 
@@ -167,6 +171,10 @@ void blurIterationVertical(Data* data, const int size, const int width, const in
 			index = scratchIndex;
 			scratchIndex = temp;
 		}
+		// swap scratchIndex and index
+		int temp = index;
+		index = scratchIndex;
+		scratchIndex = temp;
 	}
 }
 
