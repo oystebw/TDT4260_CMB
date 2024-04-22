@@ -11,7 +11,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 
 #define BLOCKSIZE 8
 #define CACHELINESIZE 64
-#define PF_OFFSET 64
+#define PF_OFFSET 128
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -53,12 +53,12 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 	}
 }
 
-void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
-		const int yWidth = y * width;
-		for(int iteration = 0; iteration < 3; ++iteration) {
+	for(int iteration = 0; iteration < 3; ++iteration) {
+		#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+		for(int y = 0; y < height; ++y) {
+			const int yWidth = y * width;
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -85,17 +85,16 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 				sum -= in[yWidth + x - size - 1];
 				out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, size + width - x};
 			}
-
-			// swap in and out
-			v4Accurate* tmp = in;
-			in = out;
-			out = tmp;
 		}
 		// swap in and out
 		v4Accurate* tmp = in;
 		in = out;
 		out = tmp;
 	}
+	// swap in and out
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
@@ -134,10 +133,10 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
-	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int x = 0; x < width; ++x) {
-		const int xHeight = x * height;
-		for(int iteration = 0; iteration < 5; ++iteration) {
+	for(int iteration = 0; iteration < 5; ++iteration) {
+		#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+		for(int x = 0; x < width; ++x) {
+			const int xHeight = x * height;
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
@@ -163,16 +162,16 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				sum -= in[xHeight + y - size - 1];
 				out[xHeight + y] = sum / (v4Accurate){size + height - y, size + height - y, size + height - y, size + height - y};
 			}
-			// swap
-			v4Accurate* tmp = in;
-			in = out;
-			out = tmp;
 		}
 		// swap
 		v4Accurate* tmp = in;
 		in = out;
 		out = tmp;
 	}
+	// swap
+	v4Accurate* tmp = in;
+	in = out;
+	out = tmp;
 }
 
 void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
