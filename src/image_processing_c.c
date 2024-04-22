@@ -10,9 +10,9 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include "ppm.h"
 
 #define BLOCKSIZE 8
-#define BLURBLOCKSIZE 8
+#define BLURBLOCKSIZE 16
 #define CACHELINESIZE 64
-#define PF_OFFSET 128
+#define PF_OFFSET 256
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
