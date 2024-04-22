@@ -136,7 +136,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	// const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	register float* divisor asm("fpsid");
+	register float* divisor asm("r7");
 	*(divisor) = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = width - 1; x >= 0; --x) {
