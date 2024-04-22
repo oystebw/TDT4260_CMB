@@ -139,6 +139,11 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 		for(int iteration = 0; iteration < 5; ++iteration) {
+			
+			for(int y = 0; y < height; y += 4) {
+				__builtin_prefetch(&in[xHeight + y + size], 0, 3);
+			}
+
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
@@ -154,7 +159,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				__builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
+				// __builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * divisor;
