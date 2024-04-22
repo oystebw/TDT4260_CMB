@@ -23,12 +23,8 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
+	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
-
-		for(int x = 0; x < width; x += 4) {
-			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
-		}
 
 		v4Int sum = {0, 0, 0, 0};
 
@@ -45,7 +41,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			// __builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);
+			__builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], sum[3]} * divisor;
@@ -61,11 +57,9 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
+	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
-		for(int x = 0; x < width; x += 4) {
-			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
-		}
+
 		for(int iteration = 0; iteration < 3; ++iteration) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -83,7 +77,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 			#pragma GCC unroll 16
 			for(int x = size + 1; x < width - size; ++x) {
-				// __builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);
+				__builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
 				out[yWidth + x] = sum * divisor;
@@ -109,12 +103,8 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
+	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
-
-		for(int x = 0; x < width; x += 4) {
-			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
-		}
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -131,7 +121,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			// __builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);			
+			__builtin_prefetch((char*)&in[yWidth + x + size] + PF_OFFSET, 0, 3);			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * divisor;
@@ -147,11 +137,9 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1)};
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int x = 0; x < width; ++x) {
+	for(int x = width - 1; x >= 0; --x) {
 		const int xHeight = x * height;
-		for(int y = 0; y < height; y += 4) {
-			__builtin_prefetch(&in[xHeight + y + size], 0, 2);
-		}
+
 		for(int iteration = 0; iteration < 5; ++iteration) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -169,7 +157,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				// __builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
+				__builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * divisor;
