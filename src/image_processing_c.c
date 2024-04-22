@@ -21,7 +21,7 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
+	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
@@ -55,7 +55,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 }
 
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
+	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
@@ -101,7 +101,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 }
 
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
+	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = height - 1; y >= 0; --y) {
 		const int yWidth = y * width;
@@ -135,9 +135,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 }
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	// const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
-	register float* divisor asm("r7");
-	*(divisor) = 1.0 / (2 * size + 1);
+	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = width - 1; x >= 0; --x) {
 		const int xHeight = x * height;
@@ -162,7 +160,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				__builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
-				out[xHeight + y] = sum * (v4Accurate){*divisor, *divisor, *divisor, 1.0f};
+				out[xHeight + y] = sum * divisor;
 			}
 
 			for(int y = height - size; y < height; ++y) {
