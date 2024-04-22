@@ -135,7 +135,9 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 }
 
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
-	const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
+	// const v4Accurate divisor = (v4Accurate){1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0 / (2 * size + 1), 1.0f};
+	register float* divisor asm("r12");
+	*(divisor) = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = width - 1; x >= 0; --x) {
 		const int xHeight = x * height;
@@ -160,7 +162,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 				__builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
-				out[xHeight + y] = sum * divisor;
+				out[xHeight + y] = sum * (v4Accurate){*divisor, *divisor, *divisor, 1.0f};
 			}
 
 			for(int y = height - size; y < height; ++y) {
