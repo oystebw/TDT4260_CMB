@@ -41,7 +41,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 
 		#pragma GCC unroll 16
 		for(int xx = size + 1; xx < width - size; xx += 32) {
-			__builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
+			// __builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
 			for(int x = xx; x < xx + 32 && x < width - size; ++x) {
 				sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 				sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
@@ -78,7 +78,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 
 			#pragma GCC unroll 16
 			for(int xx = size + 1; xx < width - size; xx += BLURBLOCKSIZE) {
-				__builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
+				// __builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
 				for(int x = xx; x < xx + BLURBLOCKSIZE && x < width - size; ++x) {
 					sum -= in[yWidth + x - size - 1];
 					sum += in[yWidth + x + size];
@@ -124,7 +124,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 
 		#pragma GCC unroll 16
 		for(int xx = size + 1; xx < width - size; xx += BLURBLOCKSIZE) {
-			__builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
+			// __builtin_prefetch((char*)&in[yWidth + xx + size] + PF_OFFSET, 0, 3);
 			for(int x = xx; x < xx + BLURBLOCKSIZE && x < width - size; ++x) {				
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
@@ -160,7 +160,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 			#pragma GCC unroll 16
 			for(int yy = size + 1; yy < height - size; yy += BLURBLOCKSIZE) {
-				__builtin_prefetch((char*)&in[xHeight + yy + size] + PF_OFFSET, 0, 3);
+				// __builtin_prefetch((char*)&in[xHeight + yy + size] + PF_OFFSET, 0, 3);
 				for(int y = yy; y < yy + BLURBLOCKSIZE && y < height - size; ++y) {
 					sum -= in[xHeight + y - size - 1];
 					sum += in[xHeight + y + size];
