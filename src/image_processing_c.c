@@ -26,6 +26,10 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
+		for(int x = 0; x < width; x += 4) {
+			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
+		}
+
 		v4Int sum = {0, 0, 0, 0};
 
 		for(int x = 0; x <= size; ++x) {
@@ -59,6 +63,9 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
+		for(int x = 0; x < width; x += 4) {
+			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
+		}
 		for(int iteration = 0; iteration < 3; ++iteration) {
 			
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -105,6 +112,10 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
+		for(int x = 0; x < width; x += 4) {
+			__builtin_prefetch(&in[yWidth + x + size], 0, 2);
+		}
+
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 		for(int x = 0; x <= size; ++x) {
@@ -138,12 +149,11 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
+		for(int y = 0; y < height; y += 4) {
+			__builtin_prefetch(&in[xHeight + y + size], 0, 2);
+		}
 		for(int iteration = 0; iteration < 5; ++iteration) {
 			
-			for(int y = 0; y < height; y += 4) {
-				__builtin_prefetch(&in[xHeight + y + size], 0, 3);
-			}
-
 			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
@@ -159,7 +169,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				// __builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
+				__builtin_prefetch((char*)&in[xHeight + y + size] + PF_OFFSET, 0, 3);
 				sum -= in[xHeight + y - size - 1];
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * divisor;
