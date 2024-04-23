@@ -9,7 +9,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include <omp.h>
 #include "ppm.h"
 
-#define BLOCKSIZE 8
+#define BLOCKSIZE 16
 #define BLURBLOCKSIZE 16
 #define CACHELINESIZE 64
 #define PF_OFFSET 128
@@ -190,6 +190,8 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
+					__builtin_prefetch(&large[xHeight + y + 4], 0, 0);
+					__builtin_prefetch(&small[xHeight + y + 4], 0, 0);
 					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
 						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
