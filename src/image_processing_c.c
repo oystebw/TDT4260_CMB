@@ -24,9 +24,9 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		const int yWidth = y * width;
+		register const int yWidth = y * width;
 
-		v4Int sum = {0, 0, 0, 0};
+		register v4Int sum = {0, 0, 0, 0};
 
 		for(int x = 0; x <= size; ++x) {
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0};
@@ -58,11 +58,11 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		const int yWidth = y * width;
+		register const int yWidth = y * width;
 
 		for(int iteration = 0; iteration < 3; ++iteration) {
 			
-			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+			register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int x = 0; x <= size; ++x) {
 				sum += in[yWidth + x];
@@ -104,9 +104,9 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		const int yWidth = y * width;
+		register const int yWidth = y * width;
 
-		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+		register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 		for(int x = 0; x <= size; ++x) {
 			sum += in[yWidth + x];
@@ -138,11 +138,11 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
-		const int xHeight = x * height;
+		register const int xHeight = x * height;
 
 		for(int iteration = 0; iteration < 5; ++iteration) {
 			
-			v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+			register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
 			for(int y = 0; y <= size; ++y) {
 				sum += in[xHeight + y];
@@ -185,16 +185,16 @@ void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict sma
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
-				const int xHeight = x * height;
+				register const int xHeight = x * height;
 				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
 				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
 				#pragma GGC unroll 16
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-					v4Accurate diff = large[xHeight + y] - small[xHeight + y];
+					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
-						diff[0] = diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
-						diff[1] = diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
-						diff[2] = diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+						diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+						diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
 					};
 				}
 			}
