@@ -9,7 +9,7 @@ typedef struct {
      PPMPixel *data;
 } PPMImage;
 
-PPMImage *readStreamPPM(FILE*  fp);
+PPMImage *readStreamPPM(FILE* restrict fp);
 PPMImage *readPPM(const char* restrict filename);
 void writeStreamPPM(FILE* restrict fp, const PPMImage* restrict img);
 void writePPM(const char* restrict filename, const PPMImage* restrict img);
