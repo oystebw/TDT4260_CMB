@@ -21,7 +21,7 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 
 __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
-	#pragma omp parallel for simd schedule(dynamic, 8) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 1) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 
@@ -55,7 +55,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 __attribute__((hot)) void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
-	#pragma omp parallel for simd schedule(dynamic, 8) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 1) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 
@@ -101,7 +101,7 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* in, v4Accurate* ou
 
 __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
-	#pragma omp parallel for simd schedule(dynamic, 8) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 1) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 
@@ -135,7 +135,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 
 __attribute__((hot)) void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
-	#pragma omp parallel for simd schedule(dynamic, 8) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 1) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		register const int xHeight = x * height;
 
@@ -180,7 +180,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* in, v4Accurate* out,
 
 __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	
-	#pragma omp parallel for simd schedule(dynamic, 8) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 1) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
