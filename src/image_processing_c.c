@@ -182,24 +182,15 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* in, v4Accurate* out,
 __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
-		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
-			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
-				register const int xHeight = x * height;
-				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
-				#pragma GGC unroll 16
-				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-					__builtin_prefetch(&large[xHeight + y + 4], 0, 0);
-					__builtin_prefetch(&small[xHeight + y + 4], 0, 0);
-					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
-					imageOut[y * width + x] = (PPMPixel){
-						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
-						diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
-						diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
-					};
-				}
-			}
+	for(int x = 0; x < width; ++x) {
+		register const int xHeight = x * height;
+		for(int y = 0; y < height; ++y) {
+			register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
+			imageOut[y * width + x] = (PPMPixel){
+				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+				diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+			};
 		}
 	}
 }
