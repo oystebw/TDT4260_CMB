@@ -9,7 +9,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include <omp.h>
 #include "ppm.h"
 
-#define BLOCKSIZE 16
+#define BLOCKSIZE 8
 #define BLURBLOCKSIZE 16
 #define CACHELINESIZE 64
 #define PF_OFFSET 128
