@@ -20,8 +20,7 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
-__attribute__((always_inline)) __attribute__((hot))
-void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -55,8 +54,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 	}
 }
 
-__attribute__((always_inline)) __attribute__((hot))
-void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -102,8 +100,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 	}
 }
 
-__attribute__((always_inline)) __attribute__((hot))
-void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -137,8 +134,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 	}
 }
 
-__attribute__((always_inline)) __attribute__((hot))
-void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
@@ -183,8 +179,7 @@ void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, cons
 	}
 }
 
-__attribute__((always_inline)) __attribute__((hot))
-void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
+__attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
