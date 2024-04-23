@@ -23,7 +23,7 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = height - 1; y >= 0; --y) {
+	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
 		v4Int sum = {0, 0, 0, 0};
@@ -57,7 +57,7 @@ void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restr
 void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = height - 1; y >= 0; --y) {
+	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
 		for(int iteration = 0; iteration < 3; ++iteration) {
@@ -103,7 +103,7 @@ void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, co
 void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int y = height - 1; y >= 0; --y) {
+	for(int y = 0; y < height; ++y) {
 		const int yWidth = y * width;
 
 		v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
@@ -137,7 +137,7 @@ void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate*
 void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
 	register float divisor = 1.0 / (2 * size + 1);
 	#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-	for(int x = width - 1; x >= 0; --x) {
+	for(int x = 0; x < width; ++x) {
 		const int xHeight = x * height;
 
 		for(int iteration = 0; iteration < 5; ++iteration) {
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
 	blurIterationHorizontal( scratch,  two,  8, width, height);
 	blurIterationHorizontalTranspose( two,  scratch,  8, width, height);
 	blurIterationVertical( scratch,  two,  8, width, height);
-	
+
 	imageDifference(result->data,  one,  two, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
