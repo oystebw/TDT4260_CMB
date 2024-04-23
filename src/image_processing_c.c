@@ -187,6 +187,7 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 		for(int y = 0; y < height; ++y) {
 			__builtin_prefetch(&large[xHeight + y + 8], 0, 3);
 			__builtin_prefetch(&small[xHeight + y + 8], 0, 3);
+			__builtin_prefetch(&imageOut[y * width + x + 42], 1, 3);
 			register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 			imageOut[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
