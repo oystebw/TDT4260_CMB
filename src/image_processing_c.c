@@ -235,6 +235,7 @@ int main(int argc, char** argv) {
 	blurIterationHorizontal( scratch,  one,  5, width, height);
 	blurIterationHorizontalTranspose( one,  scratch,  5, width, height);
 	blurIterationVertical( scratch,  one,  5, width, height);
+
 	imageDifference(result->data,  two,  one, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
@@ -242,6 +243,7 @@ int main(int argc, char** argv) {
 	blurIterationHorizontal( scratch,  two,  8, width, height);
 	blurIterationHorizontalTranspose( two,  scratch,  8, width, height);
 	blurIterationVertical( scratch,  two,  8, width, height);
+	
 	imageDifference(result->data,  one,  two, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
