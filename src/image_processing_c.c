@@ -9,8 +9,6 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include <omp.h>
 #include "ppm.h"
 
-#define BLOCKSIZE 8
-#define BLURBLOCKSIZE 16
 #define CACHELINESIZE 64
 #define PF_OFFSET 128
 
@@ -184,7 +182,11 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		register const int xHeight = x * height;
+		__builtin_prefetch(&large[xHeight + height], 0, 2);
+		__builtin_prefetch(&small[xHeight + height], 0, 2);
 		for(int y = 0; y < height; ++y) {
+			__builtin_prefetch(&large[xHeight + y + 8], 0, 3);
+			__builtin_prefetch(&small[xHeight + y + 8], 0, 3);
 			register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 			imageOut[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
