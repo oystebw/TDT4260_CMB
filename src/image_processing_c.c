@@ -38,12 +38,18 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
+
+		v4Accurate* res = &out[yWidth + size + 1];
+		const PPMPixel* minus = &in[yWidth];
+		const PPMPixel* plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
-			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
-			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
-			out[yWidth + x] = sum;
+			// __builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
+			sum -= (v4Accurate){minus->red, minus->green, minus->blue, 0.0f};
+			sum += (v4Accurate){plus->red, plus->green, plus->blue, 0.0f};
+			*res++ = sum;
+			++minus;
+			++plus;
 		}
 
 		for(int x = width - size; x < width; ++x) {
