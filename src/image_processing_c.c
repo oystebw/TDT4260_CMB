@@ -13,7 +13,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #define CACHELINESIZE 64
 #define PF_OFFSET 128
 
-typedef float v4Accurate __attribute__((vector_size(16)));
+typedef __int32_t v4Accurate __attribute__((vector_size(16)));
 
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
@@ -30,11 +30,11 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			sum += (v4Accurate){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
 		}
 
-		out[yWidth + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[yWidth + 0] = (sum * multiplier) / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
-			out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[yWidth + x] = (sum * multiplier) / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 
@@ -53,7 +53,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			out[yWidth + x] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[yWidth + x] = (sum * multiplier) / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
