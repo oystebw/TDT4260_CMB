@@ -24,9 +24,12 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		// int cpu, node;
-		// getcpu(&cpu, &node);
-		// (node == 2) ? printf("CPU: %d, Node: %d\n", cpu, node) : 0;
+		int cpu, node;
+		getcpu(&cpu, &node);
+		if(cpu > 3) {
+			continue;;
+		}
+
 		register const int yWidth = y * width;
 
 		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
