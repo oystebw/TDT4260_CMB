@@ -24,22 +24,22 @@ typedef float v4Accurate __attribute__((vector_size(16)));
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
-int stick_this_thread_to_core(int core_id) {
+// int stick_this_thread_to_core(int core_id) {
 
-   cpu_set_t cpuset;
-   CPU_ZERO(&cpuset);
-   CPU_SET(core_id, &cpuset);
+//    cpu_set_t cpuset;
+//    CPU_ZERO(&cpuset);
+//    CPU_SET(core_id, &cpuset);
 
-   pthread_t current_thread = pthread_self();    
-   return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
-}
+//    pthread_t current_thread = pthread_self();    
+//    return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+// }
 
 __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		int cpu, node;
-		getcpu(&cpu, &node);
+		// int cpu, node;
+		// getcpu(&cpu, &node);
 
 		register const int yWidth = y * width;
 
