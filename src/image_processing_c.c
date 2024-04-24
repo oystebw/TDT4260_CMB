@@ -1,10 +1,12 @@
 #pragma GCC optimize ("Ofast")
 #pragma GCC tune ("cortex-a15")
+#pragma GCC tune ("mfpu=neon-vfpv4")
 __attribute__((optimize("prefetch-loop-arrays")))
 
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sched.h>
 
 #include <omp.h>
 #include "ppm.h"
@@ -13,7 +15,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #define CACHELINESIZE 64
 #define PF_OFFSET 128
 
-typedef __int32_t v4Accurate __attribute__((vector_size(16)));
+typedef float v4Accurate __attribute__((vector_size(16)));
 
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
@@ -22,6 +24,9 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
+		// int cpu, node;
+		// getcpu(&cpu, &node);
+		// (node == 2) ? printf("CPU: %d, Node: %d\n", cpu, node) : 0;
 		register const int yWidth = y * width;
 
 		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -30,11 +35,11 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			sum += (v4Accurate){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
 		}
 
-		out[yWidth + 0] = (sum * multiplier) / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[yWidth + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
-			out[yWidth + x] = (sum * multiplier) / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 
@@ -53,7 +58,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			out[yWidth + x] = (sum * multiplier) / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[yWidth + x] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
