@@ -11,7 +11,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 
 #define BLOCKSIZE 8
 #define CACHELINESIZE 64
-#define PF_OFFSET 32
+#define PF_OFFSET 4
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -40,7 +40,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + 170], 0, 3);
+			__builtin_prefetch(&in[yWidth + x + size + 21], 0, 3);
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum;
