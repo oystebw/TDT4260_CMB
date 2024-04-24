@@ -8,9 +8,6 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pthread.h>
-// #include <sched.h>
-// #include <unistd.h>
 
 #include <omp.h>
 #include "ppm.h"
@@ -24,22 +21,10 @@ typedef float v4Accurate __attribute__((vector_size(16)));
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
-// int stick_this_thread_to_core(int core_id) {
-
-//    cpu_set_t cpuset;
-//    CPU_ZERO(&cpuset);
-//    CPU_SET(core_id, &cpuset);
-
-//    pthread_t current_thread = pthread_self();    
-//    return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
-// }
-
 __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
-		// int cpu, node;
-		// getcpu(&cpu, &node);
 
 		register const int yWidth = y * width;
 
@@ -57,9 +42,9 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 		}
 
 
-		register v4Accurate* res = &out[yWidth + size + 1];
-		register const PPMPixel* minus = &in[yWidth];
-		register const PPMPixel* plus = &in[yWidth + size * 2 + 1];
+		register v4Accurate* restrict res = &out[yWidth + size + 1];
+		register const PPMPixel* restrict minus = &in[yWidth];
+		register const PPMPixel* restrict plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
 		for(int x = width - 2 * size - 1; x > 0; --x) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
@@ -76,16 +61,6 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 		}
 	}
 }
-
-typedef struct{
-	v4Accurate* in;
-	v4Accurate* out;
-	int size;
-	int width;
-	int height;
-	int id;
-} args;
-
 
 __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
@@ -108,9 +83,9 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 				out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 			}
 
-			register v4Accurate* res = &out[yWidth + size + 1];
-			register const v4Accurate* minus = &in[yWidth];
-			register const v4Accurate* plus = &in[yWidth + size * 2 + 1];
+			register v4Accurate* restrict res = &out[yWidth + size + 1];
+			register const v4Accurate* restrict minus = &in[yWidth];
+			register const v4Accurate* restrict plus = &in[yWidth + size * 2 + 1];
 			#pragma GCC unroll 16
 			for(int x = width - 2 * size - 1; x > 0; --x) {
 				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
@@ -153,9 +128,9 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
-		register v4Accurate* res = &out[(size + 1) * height + y];
-		register const v4Accurate* minus = &in[yWidth];
-		register const v4Accurate* plus = &in[yWidth + size * 2 + 1];
+		register v4Accurate* restrict res = &out[(size + 1) * height + y];
+		register const v4Accurate* restrict minus = &in[yWidth];
+		register const v4Accurate* restrict plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
 		for(int x = width - 2 * size - 1; x > 0; --x) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);		
@@ -191,9 +166,9 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 				out[xHeight + y] = sum * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
 			}
 
-			register v4Accurate* res = &out[xHeight + size + 1];
-			register const v4Accurate* minus = &in[xHeight];
-			register const v4Accurate* plus = &in[xHeight + size * 2 + 1];
+			register v4Accurate* restrict res = &out[xHeight + size + 1];
+			register const v4Accurate* restrict minus = &in[xHeight];
+			register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
 			#pragma GCC unroll 16
 			for(int x = height - 2 * size - 1; x > 0; --x) {
 				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
@@ -244,61 +219,6 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	}
 }
 
-void* blurIterationHorizontalThread(void* arg) {
-	v4Accurate* restrict in = ((args*)arg)->in;
-	v4Accurate* restrict out = ((args*)arg)->out;
-	const int size = ((args*)arg)->size;
-	const int width = ((args*)arg)->width;
-	const int height = ((args*)arg)->height;
-	const int id = ((args*)arg)->id;
-
-	// stick_this_thread_to_core(id);
-
-	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
-	for(int y = id; y < height; y += 4) {
-		register const int yWidth = y * width;
-
-		for(int iteration = 0; iteration < 3; ++iteration) {
-			
-			register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
-
-			for(int x = 0; x <= size; ++x) {
-				sum += in[yWidth + x];
-			}
-
-			out[yWidth + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
-
-			for(int x = 1; x <= size; ++x) {
-				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
-			}
-
-			register v4Accurate* res = &out[yWidth + size + 1];
-			register const v4Accurate* minus = &in[yWidth];
-			register const v4Accurate* plus = &in[yWidth + size * 2 + 1];
-			#pragma GCC unroll 16
-			for(int x = width - 2 * size - 1; x > 0; --x) {
-				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
-				*res++ = sum += *plus++ - *minus++;
-			}
-
-			for(int x = width - size; x < width; ++x) {
-				sum -= in[yWidth + x - size - 1];
-				out[yWidth + x] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
-			}
-
-			// swap in and out
-			v4Accurate* tmp = in;
-			in = out;
-			out = tmp;
-		}
-		// swap in and out
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
-	}
-}
-
 int main(int argc, char** argv) {
 
     const PPMImage* restrict image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
@@ -316,21 +236,7 @@ int main(int argc, char** argv) {
 	result->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * width * height);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  2, width, height);
-	pthread_t threads[4];
-	for(int i = 0; i < 4; ++i) {
-		args* arg = (args*)malloc(sizeof(args));
-		arg->in = scratch;
-		arg->out = one;
-		arg->size = 2;
-		arg->width = width;
-		arg->height = height;
-		arg->id = i;
-		pthread_create(&threads[i], NULL, blurIterationHorizontalThread, (void*)arg);
-	}
-	for(int i = 0; i < 4; ++i) {
-		pthread_join(threads[i], NULL);
-	}
-	// blurIterationHorizontal( scratch,  one,  2, width, height);
+	blurIterationHorizontal( scratch,  one,  2, width, height);
 	blurIterationHorizontalTranspose( one,  scratch,  2, width, height);
 	blurIterationVertical( scratch,  one,  2, width, height);
 
