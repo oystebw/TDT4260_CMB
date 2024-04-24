@@ -252,7 +252,7 @@ void* blurIterationHorizontalThread(void* arg) {
 	const int height = ((args*)arg)->height;
 	const int id = ((args*)arg)->id;
 
-	stick_this_thread_to_core(id);
+	// stick_this_thread_to_core(id);
 
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	for(int y = id; y < height; y += 4) {
