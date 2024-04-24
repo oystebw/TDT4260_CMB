@@ -80,10 +80,13 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 				out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 			}
 
+			v4Accurate* res = &out[yWidth + size + 1];
+			const v4Accurate* minus = &in[yWidth];
+			const v4Accurate* plus = &in[yWidth + size * 2 + 1];
 			#pragma GCC unroll 16
 			for(int x = size + 1; x < width - size; ++x) {
-				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
-				out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
+				// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
+				*res++ = sum += *plus++ - *minus++;
 			}
 
 			for(int x = width - size; x < width; ++x) {
@@ -122,10 +125,14 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
+		v4Accurate* res = &out[(size + 1) * height + y];
+		const v4Accurate* minus = &in[yWidth];
+		const v4Accurate* plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
-			out[x * height + y] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
+			// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
+			*res = sum += *plus++ - *minus++;
+			res += height;
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -156,10 +163,13 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 				out[xHeight + y] = sum * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
 			}
 
+			v4Accurate* res = &out[xHeight + size + 1];
+			const v4Accurate* minus = &in[xHeight];
+			const v4Accurate* plus = &in[xHeight + size * 2 + 1];
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
-				out[xHeight + y] = sum += in[xHeight + y + size] - in[xHeight + y - size - 1];
+				// __builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
+				*res++ = sum += *plus++ - *minus++;
 			}
 
 			for(int y = height - size; y < height; ++y) {
