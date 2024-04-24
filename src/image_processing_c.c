@@ -53,7 +53,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 	}
 }
 
-__attribute__((hot)) void blurIterationHorizontal(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -133,7 +133,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 	}
 }
 
-__attribute__((hot)) void blurIterationVertical(v4Accurate* in, v4Accurate* out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
@@ -186,11 +186,11 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				register const int xHeight = x * height;
 				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
+				__builtin_prefetch(&large[xHeight + height + yy], 0, 0);
+				__builtin_prefetch(&small[xHeight + height + yy], 0, 0);
 				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
+				__builtin_prefetch(&large[xHeight + height + yy + 4], 0, 0);
+				__builtin_prefetch(&small[xHeight + height + yy + 4], 0, 0);
 				#pragma GGC unroll 8
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
