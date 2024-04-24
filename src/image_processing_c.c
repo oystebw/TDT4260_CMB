@@ -99,11 +99,11 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 
 __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
-	// #pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 
-		register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
 
 		for(int x = 0; x <= size; ++x) {
 			sum += in[yWidth + x];
