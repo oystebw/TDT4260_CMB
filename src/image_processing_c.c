@@ -176,55 +176,16 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
 	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
-		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
-			// first row
-			__builtin_prefetch(&large[xx * height + yy], 0, 3);
-			__builtin_prefetch(&small[xx * height + yy], 0, 3);
-			__builtin_prefetch(&large[xx * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[xx * height + yy + 4], 0, 3);
-			// second row	
-			__builtin_prefetch(&large[(xx + 1) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 1) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 1) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 1) * height + yy + 4], 0, 3);
-			// third row
-			__builtin_prefetch(&large[(xx + 2) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 2) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 2) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 2) * height + yy + 4], 0, 3);
-			// fourth row
-			__builtin_prefetch(&large[(xx + 3) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 3) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 3) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 3) * height + yy + 4], 0, 3);
-			// fifth row
-			__builtin_prefetch(&large[(xx + 4) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 4) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 4) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 4) * height + yy + 4], 0, 3);
-			// sixth row
-			__builtin_prefetch(&large[(xx + 5) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 5) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 5) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 5) * height + yy + 4], 0, 3);
-			// seventh row
-			__builtin_prefetch(&large[(xx + 6) * height + yy], 0, 3);
-			__builtin_prefetch(&small[(xx + 6) * height + yy], 0, 3);
-			__builtin_prefetch(&large[(xx + 6) * height + yy + 4], 0, 3);
-			__builtin_prefetch(&small[(xx + 6) * height + yy + 4], 0, 3);
-			for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-				register const int yWidth = y * width;
-				#pragma GGC unroll 8
-				for(int x = xx; x < xx + BLOCKSIZE; ++x) {
-					register const v4Accurate diff = large[x * height + y] * divisorLarge - small[x * height + y] * divisorSmall;
-					imageOut[yWidth + x] = (PPMPixel){
-						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
-						diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
-						diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
-					};
-				}
-			}
+	for(int y = 0; y < height; ++y) {
+		register const int yWidth = y * width;
+		#pragma GGC unroll 16
+		for(int x = 0; x < width; ++x) {
+			register const v4Accurate diff = large[x * height + y] * divisorLarge - small[x * height + y] * divisorSmall;
+			imageOut[yWidth + x] = (PPMPixel){
+				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+				diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+			};
 		}
 	}
 }
