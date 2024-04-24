@@ -196,11 +196,11 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				register const int xHeight = x * height;
 				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + height + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + height + yy], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 2 + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 2 + yy], 0, 3);
 				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + height + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + height + yy + 4], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
 				#pragma GGC unroll 8
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					register const v4Accurate diff = large[xHeight + y] * divisorLarge - small[xHeight + y] * divisorSmall;
