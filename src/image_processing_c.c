@@ -178,14 +178,43 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
+			// first row
+			__builtin_prefetch(&large[xx * height + yy], 0, 3);
+			__builtin_prefetch(&small[xx * height + yy], 0, 3);
+			__builtin_prefetch(&large[xx * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[xx * height + yy + 4], 0, 3);
+			// second row	
+			__builtin_prefetch(&large[(xx + 1) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 1) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 1) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 1) * height + yy + 4], 0, 3);
+			// third row
+			__builtin_prefetch(&large[(xx + 2) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 2) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 2) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 2) * height + yy + 4], 0, 3);
+			// fourth row
+			__builtin_prefetch(&large[(xx + 3) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 3) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 3) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 3) * height + yy + 4], 0, 3);
+			// fifth row
+			__builtin_prefetch(&large[(xx + 4) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 4) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 4) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 4) * height + yy + 4], 0, 3);
+			// sixth row
+			__builtin_prefetch(&large[(xx + 5) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 5) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 5) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 5) * height + yy + 4], 0, 3);
+			// seventh row
+			__builtin_prefetch(&large[(xx + 6) * height + yy], 0, 3);
+			__builtin_prefetch(&small[(xx + 6) * height + yy], 0, 3);
+			__builtin_prefetch(&large[(xx + 6) * height + yy + 4], 0, 3);
+			__builtin_prefetch(&small[(xx + 6) * height + yy + 4], 0, 3);
 			for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 				register const int yWidth = y * width;
-				// first four elements in tight loop
-				// __builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				// __builtin_prefetch(&small[xHeight + height + yy], 0, 3);
-				// // last four elements in tight loop
-				// __builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
-				// __builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
 				#pragma GGC unroll 8
 				for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 					register const v4Accurate diff = large[x * height + y] * divisorLarge - small[x * height + y] * divisorSmall;
