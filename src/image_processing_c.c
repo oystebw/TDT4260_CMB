@@ -112,11 +112,11 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			sum += in[yWidth + x];
 		}
 
-		out[0 * height + y] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[0 * height + y] = sum * divisor * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[x * height + y] = sum * divisor * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
@@ -124,18 +124,13 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum;
+			out[x * height + y] = sum * divisor;
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= in[yWidth + x - size - 1];
-			out[x * height + y] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[x * height + y] = sum * divisor * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
-	}
-	register const pixels = height * width;
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int i = 0; i < pixels; ++i){
-		out[i] *= divisor;
 	}
 }
 
