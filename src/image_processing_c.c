@@ -40,7 +40,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
+			// __builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum;
@@ -76,9 +76,7 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 
 			#pragma GCC unroll 16
 			for(int x = size + 1; x < width - size; ++x) {
-				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
-				// sum -= in[yWidth + x - size - 1];
-				// sum += in[yWidth + x + size];
+				// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
 				out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
 			}
 
@@ -120,9 +118,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
-			// sum -= in[yWidth + x - size - 1];
-			// sum += in[yWidth + x + size];
+			// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
 			out[x * height + y] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
 		}
 
@@ -156,9 +152,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
-				// sum -= in[xHeight + y - size - 1];
-				// sum += in[xHeight + y + size];
+				// __builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
 				out[xHeight + y] = sum += in[xHeight + y + size] - in[xHeight + y - size - 1];
 			}
 
