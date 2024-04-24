@@ -9,8 +9,8 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <sched.h>
-#include <unistd.h>
+// #include <sched.h>
+// #include <unistd.h>
 
 #include <omp.h>
 #include "ppm.h"
