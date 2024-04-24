@@ -65,7 +65,7 @@ PPMImage* readStreamPPM(FILE* restrict fp) {
 
 	while (fgetc(fp) != '\n') ;
 	//memory allocation for pixel data
-	image->data = (PPMPixel* restrict)aligned_alloc(16, image->x * image->y * sizeof(PPMPixel));
+	image->data = (PPMPixel* restrict)aligned_alloc(64, image->x * image->y * sizeof(PPMPixel));
 
 	if (!image) {
 		fprintf(stderr, "Unable to allocate memory\n");
@@ -142,7 +142,7 @@ PPMImage* readPPM(const char* restrict filename)
 
     while (fgetc(fp) != '\n') ;
     //memory allocation for pixel data
-    img->data = (PPMPixel* restrict)aligned_alloc(16, img->x * img->y * sizeof(PPMPixel));
+    img->data = (PPMPixel* restrict)aligned_alloc(64, img->x * img->y * sizeof(PPMPixel));
 
     if (!img) {
          fprintf(stderr, "Unable to allocate memory\n");
