@@ -101,7 +101,6 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 
 __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
-	register const v4Accurate divisor = (v4Accurate){1.0f / pow((2 * size + 1), 5), 1.0f / pow((2 * size + 1), 5), 1.0f / pow((2 * size + 1), 5), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
@@ -112,11 +111,11 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			sum += in[yWidth + x];
 		}
 
-		out[0 * height + y] = sum * divisor * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[0 * height + y] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum * divisor * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
@@ -124,12 +123,12 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum * divisor;
+			out[x * height + y] = sum;
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= in[yWidth + x - size - 1];
-			out[x * height + y] = sum * divisor * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[x * height + y] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
@@ -180,8 +179,8 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 }
 
 __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height, const int sizeSmall, const int sizeLarge) {
-	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2 * sizeSmall + 1), 5), 1.0f / pow((2 * sizeSmall + 1), 5), 1.0f / pow((2 * sizeSmall + 1), 5), 1.0f};
-	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2 * sizeLarge + 1), 5), 1.0f / pow((2 * sizeLarge + 1), 5), 1.0f / pow((2 * sizeLarge + 1), 5), 1.0f};
+	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2 * sizeSmall + 1), 10), 1.0f / pow((2 * sizeSmall + 1), 10), 1.0f / pow((2 * sizeSmall + 1), 10), 1.0f};
+	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2 * sizeLarge + 1), 10), 1.0f / pow((2 * sizeLarge + 1), 10), 1.0f / pow((2 * sizeLarge + 1), 10), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
