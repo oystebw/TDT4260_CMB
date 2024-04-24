@@ -11,7 +11,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 
 #define BLOCKSIZE 8
 #define CACHELINESIZE 64
-#define PF_OFFSET 4
+#define PF_OFFSET 8
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -40,7 +40,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + 21], 0, 3);
+			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum;
@@ -176,20 +176,20 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
 	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
-		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
-			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
-				register const int xHeight = x * height;
+	for(int xx = 0; xx < width; xx += BLOCKSIZE) {
+		for(int yy = 0; yy < height; yy += BLOCKSIZE) {
+			for(int y = yy; y < yy + BLOCKSIZE; ++y) {
+				register const int yWidth = y * width;
 				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
-				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
+				// __builtin_prefetch(&large[xHeight + height + yy], 0, 3);
+				// __builtin_prefetch(&small[xHeight + height + yy], 0, 3);
+				// // last four elements in tight loop
+				// __builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
+				// __builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
 				#pragma GGC unroll 8
-				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-					register const v4Accurate diff = large[xHeight + y] * divisorLarge - small[xHeight + y] * divisorSmall;
-					imageOut[y * width + x] = (PPMPixel){
+				for(int x = xx; x < xx + BLOCKSIZE; ++x) {
+					register const v4Accurate diff = large[x * height + y] * divisorLarge - small[x * height + y] * divisorSmall;
+					imageOut[yWidth + x] = (PPMPixel){
 						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 						diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
 						diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
