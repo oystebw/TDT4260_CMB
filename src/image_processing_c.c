@@ -25,30 +25,30 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 
-		register v4Int sum = {0, 0, 0, 0};
+		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
 
 		for(int x = 0; x <= size; ++x) {
-			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0};
+			sum += (v4Accurate){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
 		}
 
-		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[yWidth + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
-			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
+			out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
 		for(int x = size + 1; x < width - size; ++x) {
 			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
-			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f};
+			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
+			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
+			out[yWidth + x] = sum;
 		}
 
 		for(int x = width - size; x < width; ++x) {
-			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
+			out[yWidth + x] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
 	}
 }
