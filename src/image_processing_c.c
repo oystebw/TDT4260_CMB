@@ -11,7 +11,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 
 #define BLOCKSIZE 8
 #define CACHELINESIZE 64
-#define PF_OFFSET 8
+#define PF_OFFSET 128
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 typedef __uint32_t v4Int __attribute__((vector_size(16)));
@@ -39,12 +39,12 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 		}
 
 
-		v4Accurate* res = &out[yWidth + size + 1];
-		const PPMPixel* minus = &in[yWidth];
-		const PPMPixel* plus = &in[yWidth + size * 2 + 1];
+		register v4Accurate* res = &out[yWidth + size + 1];
+		register const PPMPixel* minus = &in[yWidth];
+		register const PPMPixel* plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
-		for(int x = size + 1; x < width - size; ++x) {
-			// __builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
+		for(; res < &out[yWidth + width - size];) {
+			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 			sum -= (v4Accurate){minus->red, minus->green, minus->blue, 0.0f};
 			sum += (v4Accurate){plus->red, plus->green, plus->blue, 0.0f};
 			*res++ = sum;
@@ -80,12 +80,12 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 				out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 			}
 
-			v4Accurate* res = &out[yWidth + size + 1];
-			const v4Accurate* minus = &in[yWidth];
-			const v4Accurate* plus = &in[yWidth + size * 2 + 1];
+			register v4Accurate* res = &out[yWidth + size + 1];
+			register const v4Accurate* minus = &in[yWidth];
+			register const v4Accurate* plus = &in[yWidth + size * 2 + 1];
 			#pragma GCC unroll 16
-			for(int x = size + 1; x < width - size; ++x) {
-				// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
+			for(; res < &out[yWidth + width - size];) {
+				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 				*res++ = sum += *plus++ - *minus++;
 			}
 
@@ -125,14 +125,13 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
-		v4Accurate* res = &out[(size + 1) * height + y];
-		const v4Accurate* minus = &in[yWidth];
-		const v4Accurate* plus = &in[yWidth + size * 2 + 1];
+		register v4Accurate* res = &out[(size + 1) * height + y];
+		register const v4Accurate* minus = &in[yWidth];
+		register const v4Accurate* plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
-		for(int x = size + 1; x < width - size; ++x) {
-			// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
+		for(; res < &out[(width - size) * height + y]; res += height) {
+			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);		
 			*res = sum += *plus++ - *minus++;
-			res += height;
 		}
 
 		for(int x = width - size; x < width; ++x) {
@@ -163,12 +162,12 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 				out[xHeight + y] = sum * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
 			}
 
-			v4Accurate* res = &out[xHeight + size + 1];
-			const v4Accurate* minus = &in[xHeight];
-			const v4Accurate* plus = &in[xHeight + size * 2 + 1];
+			register v4Accurate* res = &out[xHeight + size + 1];
+			register const v4Accurate* minus = &in[xHeight];
+			register const v4Accurate* plus = &in[xHeight + size * 2 + 1];
 			#pragma GCC unroll 16
 			for(int y = size + 1; y < height - size; ++y) {
-				// __builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3);
+				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 				*res++ = sum += *plus++ - *minus++;
 			}
 
