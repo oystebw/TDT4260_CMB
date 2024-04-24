@@ -180,6 +180,8 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 		register const int yWidth = y * width;
 		#pragma GGC unroll 16
 		for(int x = 0; x < width; ++x) {
+			__builtin_prefetch(&large[(x + 16) * height + y], 0, 3);
+			__builtin_prefetch(&small[(x + 16) * height + y], 0, 3);
 			register const v4Accurate diff = large[x * height + y] * divisorLarge - small[x * height + y] * divisorSmall;
 			imageOut[yWidth + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
