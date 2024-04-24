@@ -175,7 +175,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height, const float sizeSmall, const float sizeLarge) {
 	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
 	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f};
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	// #pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
