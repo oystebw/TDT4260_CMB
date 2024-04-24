@@ -20,6 +20,7 @@ typedef __uint32_t v4Int __attribute__((vector_size(16)));
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
 __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	register const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -31,11 +32,11 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			sum += (v4Int){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0};
 		}
 
-		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[yWidth + 0] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
@@ -43,13 +44,17 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3);
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			sum += (v4Int){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * divisor;
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f};
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
-			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
+
+	}
+	for(int i = 0; i < width * height; ++i) {
+		out[i] *= divisor;
 	}
 }
 
