@@ -51,14 +51,11 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 			sum -= (v4Int){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0};
 			out[yWidth + x] = (v4Accurate){sum[0], sum[1], sum[2], 0.0f} * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
-
-	}
-	for(int i = 0; i < width * height; ++i) {
-		out[i] *= divisor;
 	}
 }
 
 __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
 	register const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
@@ -72,11 +69,11 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 				sum += in[yWidth + x];
 			}
 
-			out[yWidth + 0] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+			out[yWidth + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 			for(int x = 1; x <= size; ++x) {
 				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+				out[yWidth + x] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 			}
 
 			#pragma GCC unroll 16
@@ -84,12 +81,12 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);
 				sum -= in[yWidth + x - size - 1];
 				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum * divisor;
+				out[yWidth + x] = sum;
 			}
 
 			for(int x = width - size; x < width; ++x) {
 				sum -= in[yWidth + x - size - 1];
-				out[yWidth + x] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+				out[yWidth + x] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 			}
 
 			// swap in and out
@@ -105,7 +102,8 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 }
 
 __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	register const v4Accurate divisor = (v4Accurate){1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f / (2 * size + 1), 1.0f};
+	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
+	register const v4Accurate divisor = (v4Accurate){1.0f / pow((2 * size + 1), 5), 1.0f / pow((2 * size + 1), 5), 1.0f / pow((2 * size + 1), 5), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
@@ -116,11 +114,11 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			sum += in[yWidth + x];
 		}
 
-		out[0 * height + y] = sum / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		out[0 * height + y] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
 
 		for(int x = 1; x <= size; ++x) {
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
+			out[x * height + y] = sum * multiplier / (v4Accurate){size + x + 1, size + x + 1, size + x + 1, 1.0f};
 		}
 
 		#pragma GCC unroll 16
@@ -128,13 +126,16 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3);			
 			sum -= in[yWidth + x - size - 1];
 			sum += in[yWidth + x + size];
-			out[x * height + y] = sum * divisor;
+			out[x * height + y] = sum;
 		}
 
 		for(int x = width - size; x < width; ++x) {
 			sum -= in[yWidth + x - size - 1];
-			out[x * height + y] = sum / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
+			out[x * height + y] = sum * multiplier / (v4Accurate){size + width - x, size + width - x, size + width - x, 1.0f};
 		}
+	}
+	for(int i = 0; i < width * height; ++i){
+		out[i] *= divisor;
 	}
 }
 
