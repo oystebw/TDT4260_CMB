@@ -1,12 +1,15 @@
 #pragma GCC optimize ("Ofast")
-#pragma GCC tune ("cortex-a15")
+#pragma GCC tune ("generic-arch")
+// #pragma GCC tune ("cortex-a15")
+// #pragma GCC tune ("neon")
+// #pragma GCC target ("armv7")
 __attribute__((optimize("prefetch-loop-arrays")))
 
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include <omp.h>
+
 #include "ppm.h"
 
 #define BLOCKSIZE 8
@@ -220,6 +223,12 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 	}
 }
 
+/*
+This function serves three purposes:
+1. Divides the pixels by (2 * kernelSize + 1)^10 to normalize.
+2. Computes the difference between two Gaussian blurred images.
+3. Stores the resulting image AND transposes it. Notice that we transpose twice in this program, and both are "for free".
+*/
 __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height, const float sizeSmall, const float sizeLarge) {
 	// do all 10 divisions at the end of the pipeline
 	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
@@ -259,6 +268,12 @@ int main(int argc, char** argv) {
 	const int height = image->y;
 	const int size = width * height;
 
+	/*
+	We only need to allocate memory for three images. This reduces runtime since the allocation takes some time.
+	In addition, there are fewer page misses and page walks when we only work within three images and not eight.
+	
+	aligned_alloc made an improvement due to the alignment with cachelines.
+	*/
 	v4Accurate* restrict scratch = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
 	v4Accurate* restrict one = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
 	v4Accurate* restrict two = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
@@ -271,13 +286,13 @@ int main(int argc, char** argv) {
 	// tiny image
 	blurIterationHorizontalFirst(image->data, scratch, 2, width, height);
 	blurIterationHorizontal(scratch, one, 2, width, height);
-	blurIterationHorizontalTranspose( one, scratch, 2, width, height);
+	blurIterationHorizontalTranspose(one, scratch, 2, width, height);
 	blurIterationVertical(scratch, one, 2, width, height);
 
 	// small image
 	blurIterationHorizontalFirst(image->data, scratch, 3, width, height);
 	blurIterationHorizontal(scratch, two, 3, width, height);
-	blurIterationHorizontalTranspose(two, scratch,  3, width, height);
+	blurIterationHorizontalTranspose(two, scratch, 3, width, height);
 	blurIterationVertical(scratch, two, 3, width, height);
 
 	// tinyPPM
