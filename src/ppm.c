@@ -8,9 +8,9 @@
 #define RGB_COMPONENT_COLOR 255
 
 
-PPMImage *readStreamPPM(FILE *fp) {
+PPMImage* readStreamPPM(FILE* restrict fp) {
 	char buff[16];
-	PPMImage *image;
+	PPMImage* image;
 	int c, rgb_comp_color;
 	//open PPM file for reading
 	if (!fp) {
@@ -31,7 +31,7 @@ PPMImage *readStreamPPM(FILE *fp) {
 	}
 
 	//alloc memory form image
-	image = (PPMImage *)malloc(sizeof(PPMImage));
+	image = (PPMImage* restrict)aligned_alloc(16, sizeof(PPMImage));
 	if (!image) {
 		fprintf(stderr, "Unable to allocate memory\n");
 		exit(1);
@@ -65,7 +65,7 @@ PPMImage *readStreamPPM(FILE *fp) {
 
 	while (fgetc(fp) != '\n') ;
 	//memory allocation for pixel data
-	image->data = (PPMPixel*)malloc(image->x * image->y * sizeof(PPMPixel));
+	image->data = (PPMPixel* restrict)aligned_alloc(64, image->x * image->y * sizeof(PPMPixel));
 
 	if (!image) {
 		fprintf(stderr, "Unable to allocate memory\n");
@@ -73,6 +73,7 @@ PPMImage *readStreamPPM(FILE *fp) {
 	}
 
 	//read pixel data from file
+     setvbuf(fp, (char*)image->data, _IOFBF, 3 * image->x * image->y); // buffered read
 	if (fread(image->data, 3 * image->x, image->y, fp) != image->y) {
 		fprintf(stderr, "Error loading image\n");
 		exit(1);
@@ -81,11 +82,11 @@ PPMImage *readStreamPPM(FILE *fp) {
 }
 
 
-PPMImage *readPPM(const char *filename)
+PPMImage* readPPM(const char* restrict filename)
 {
          char buff[16];
          PPMImage *img;
-         FILE *fp;
+         FILE* fp;
          int c, rgb_comp_color;
          //open PPM file for reading
          fp = fopen(filename, "rb");
@@ -107,7 +108,7 @@ PPMImage *readPPM(const char *filename)
     }
 
     //alloc memory form image
-    img = (PPMImage *)malloc(sizeof(PPMImage));
+    img = (PPMImage* restrict)aligned_alloc(16, sizeof(PPMImage));
     if (!img) {
          fprintf(stderr, "Unable to allocate memory\n");
          exit(1);
@@ -141,7 +142,7 @@ PPMImage *readPPM(const char *filename)
 
     while (fgetc(fp) != '\n') ;
     //memory allocation for pixel data
-    img->data = (PPMPixel*)malloc(img->x * img->y * sizeof(PPMPixel));
+    img->data = (PPMPixel* restrict)aligned_alloc(64, img->x * img->y * sizeof(PPMPixel));
 
     if (!img) {
          fprintf(stderr, "Unable to allocate memory\n");
@@ -149,6 +150,7 @@ PPMImage *readPPM(const char *filename)
     }
 
     //read pixel data from file
+    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered read
     if (fread(img->data, 3 * img->x, img->y, fp) != img->y) {
          fprintf(stderr, "Error loading image '%s'\n", filename);
          exit(1);
@@ -159,7 +161,7 @@ PPMImage *readPPM(const char *filename)
 }
 
 
-void writeStreamPPM(FILE *fp, PPMImage *img) {
+void writeStreamPPM(FILE* restrict fp, const PPMImage* restrict img) {
 	if (!fp) {
 		fprintf(stderr, "Unable to open file\n");
 		exit(1);
@@ -179,12 +181,13 @@ void writeStreamPPM(FILE *fp, PPMImage *img) {
 	fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
 	// pixel data
+     setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered write
 	fwrite(img->data, 3 * img->x, img->y, fp);
 }
 
-void writePPM(const char *filename, PPMImage *img)
+void writePPM(const char* restrict filename, const PPMImage* restrict img)
 {
-    FILE *fp;
+    FILE* fp;
     //open file for output
     fp = fopen(filename, "wb");
     if (!fp) {
@@ -206,19 +209,20 @@ void writePPM(const char *filename, PPMImage *img)
     fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
     // pixel data
+    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered write
     fwrite(img->data, 3 * img->x, img->y, fp);
     fclose(fp);
 }
 
-void changeColorPPM(PPMImage *img)
+void changeColorPPM(PPMImage* restrict img)
 {
-    int i;
-    if(img){
-
-         for(i=0;i<img->x*img->y;i++){
+     int i;
+     if(img){
+          #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+          for(i=0;i<img->x*img->y;i++){
               img->data[i].red=RGB_COMPONENT_COLOR-img->data[i].red;
               img->data[i].green=RGB_COMPONENT_COLOR-img->data[i].green;
               img->data[i].blue=RGB_COMPONENT_COLOR-img->data[i].blue;
-         }
-    }
+          }
+     }
 }

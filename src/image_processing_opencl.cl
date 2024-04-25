@@ -1,48 +1,78 @@
-__kernel void naive_kernel(
-        __global const float* restrict in_image,
-        __global float* restrict out_image,
-        const int size
-)
-{
-    // global 2D NDRange sizes (size of the image)
-    int num_cols = get_global_size(0);
-    int num_rows = get_global_size(1);
-    // point in currently being executed (each pixel)
-    int senterX = get_global_id(0);
-    int senterY = get_global_id(1);
+__kernel void kernelHorizontal(__global float* restrict in_image, __global float* restrict out_image, const int width, const int size){
+    const int y = get_global_id(0);
+    const float divisor = 1.0 / (2.0 * size + 1.0);
+    
+    for(int i = 0; i < 5; i++) {
+        float3 sum = {0.0, 0.0, 0.0};
 
-    // For each pixel we compute a box blur
-    float3 sum = (float3) (0.0f, 0.0f, 0.0f);
-    int countIncluded = 0;
-    for(int x = -size; x <= size; x++) {
-
-        for(int y = -size; y <= size; y++) {
-            int currentX = senterX + x;
-            int currentY = senterY + y;
-
-            // Check if we are outside the bounds
-            if(currentX < 0)
-                continue;
-            if(currentX >= num_cols)
-                continue;
-            if(currentY < 0)
-                continue;
-            if(currentY >= num_rows)
-                continue;
-
-            // Now we can begin
-            int offsetOfThePixel = (num_cols * currentY + currentX);
-            float3 tmp = vload3(offsetOfThePixel, in_image);
-            sum += tmp;
-            // Keep track of how many values we have included
-            countIncluded++;
+        for(int x = 0; x <= size; x++) {
+            sum += vload3(y * width + x, in_image);
         }
+
+        vstore3(sum / (size + 1), y * width + 0, out_image);
+
+        for(int x = 1; x <= size; x++) {
+            sum += vload3(y * width + x + size, in_image);
+            vstore3(sum / (size + x + 1), y * width + x, out_image);
+        }
+
+        for(int x = size + 1; x < width - size; x++) {
+            sum -= vload3(y * width + x - size - 1, in_image);
+            sum += vload3(y * width + x + size, in_image);
+            vstore3(sum * divisor, y * width + x, out_image);
+        }
+
+        for(int x = width - size; x < width; x++) {
+            sum -= vload3(y * width + x - size - 1, in_image);
+            vstore3(sum / (size + width - x), y * width + x, out_image);
+        }
+        // swap in and out
+        __global float* tmp = in_image;
+        in_image = out_image;
+        out_image = tmp;
     }
+    // swap in and out
+    __global float* tmp = in_image;
+    in_image = out_image;
+    out_image = tmp;
+}
 
-    // Now we compute the final value
-    float3 value = sum / countIncluded;
+__kernel void kernelVertical(__global float* restrict in_image, __global float* restrict out_image, const int height, const int size){
+    const int width = get_global_size(0);
+    const int x = get_global_id(0);
+    const float divisor = 1.0 / (2.0 * size + 1.0);
+    
+    for(int i = 0; i < 5; i++) {
+        float3 sum = {0.0, 0.0, 0.0};
 
-    // Update the output image
-    int offsetOfThePixel = (num_cols * senterY + senterX);
-    vstore3(value, offsetOfThePixel, out_image);
+        for(int y = 0; y <= size; y++) {
+            sum += vload3(y * width + x, in_image);
+        }
+
+        vstore3(sum / (size + 1), 0 * width + x, out_image);
+
+        for(int y = 1; y <= size; y++) {
+            sum += vload3((y + size) * width + x, in_image);
+            vstore3(sum / (y + size + 1), y * width + x, out_image);
+        }
+
+        for(int y = size + 1; y < height - size; y++) {
+            sum -= vload3((y - size - 1) * width + x, in_image);
+            sum += vload3((y + size) * width + x, in_image);
+            vstore3(sum * divisor, y * width + x, out_image);
+        }
+
+        for(int y = height - size; y < height; y++) {
+            sum -= vload3((y - size - 1) * width + x, in_image);
+            vstore3(sum / (size + height - y), y * width + x, out_image);
+        }
+        // swap in and out
+        __global float* tmp = in_image;
+        in_image = out_image;
+        out_image = tmp;
+    }
+    // swap in and out
+    __global float* tmp = in_image;
+    in_image = out_image;
+    out_image = tmp;
 }
