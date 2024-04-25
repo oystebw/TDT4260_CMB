@@ -91,14 +91,17 @@ PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLar
 
 	imageOut->x = width;
 	imageOut->y = height;
-	for(int i = 0; i < size; i++) {
-		const v4Accurate diff = imageInLarge->data[i] * divisorLarge - imageInSmall->data[i] * divisorSmall;
-		
-        imageOut->data[i] = (PPMPixel){
-            (diff[0] < 0) ? diff[0] + 257 : diff[0],
-            (diff[1] < 0) ? diff[1] + 257 : diff[1],
-            (diff[2] < 0) ? diff[2] + 257 : diff[2]
-        };
+	for(int y = 0; y < height; y++) {
+        const int yWidth = y * width;
+        for(int x = 0; x < width; x++) {
+            const v4Accurate diff = imageInLarge->data[yWidth + x] * divisorLarge - imageInSmall->data[yWidth + x] * divisorSmall;
+            
+            imageOut->data[x * height + y] = (PPMPixel){
+                (diff[0] < 0) ? diff[0] + 257 : diff[0],
+                (diff[1] < 0) ? diff[1] + 257 : diff[1],
+                (diff[2] < 0) ? diff[2] + 257 : diff[2]
+            };
+        }
 	}
 	
 	return imageOut;
@@ -167,6 +170,7 @@ public:
         }
 
         kernelHorizontal = Kernel(program, "kernelHorizontal");
+        kernelHorizontalTranspose = Kernel(program, "kernelHorizontalTranspose");
         kernelVertical = Kernel(program, "kernelVertical");
     }
     AccurateImage* blur(AccurateImage* image, int size){
@@ -179,9 +183,7 @@ public:
 
         queue.enqueueWriteBuffer(buffer1, false, 0, bufferSize, image->data, nullptr, &events.back().second);
 
-        for(int i = 0; i < 5; i++){
-            blurIteration(image, buffer1, buffer2, size);
-        }
+        blurIteration(image, buffer1, buffer2, size);
 
         AccurateImage* result = copyAccurateImage(image, true, false);
 
@@ -205,6 +207,7 @@ private:
     CommandQueue queue;
     Program program;
     Kernel kernelHorizontal;
+    Kernel kernelHorizontalTranspose;
     Kernel kernelVertical;
     std::vector<pair<string, Event>> events;
     void printEvent(string s, Event& evt){
@@ -232,6 +235,23 @@ private:
         // call 2D kernel
         queue.enqueueNDRangeKernel(
                 kernelHorizontal, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->y), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        // create Event for profiling
+        events.emplace_back(make_pair("kernelHorizontalTranspose", Event()));
+        // set call arguments
+        kernelHorizontalTranspose.setArg(0, src);
+        kernelHorizontalTranspose.setArg(1, dst);
+        kernelHorizontalTranspose.setArg(2, image->x);
+        kernelHorizontalTranspose.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelHorizontalTranspose, // kernel to queue
                 NullRange, // use no offset
                 NDRange(image->y), // 1D kernel
                 NullRange, // use no local range
