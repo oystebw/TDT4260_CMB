@@ -1,8 +1,5 @@
 #pragma GCC optimize ("Ofast")
 #pragma GCC tune ("generic-arch")
-// #pragma GCC tune ("cortex-a15")
-// #pragma GCC tune ("neon")
-// #pragma GCC target ("armv7")
 __attribute__((optimize("prefetch-loop-arrays")))
 
 #include <math.h>
