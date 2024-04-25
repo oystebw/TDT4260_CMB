@@ -46,6 +46,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 		register const PPMPixel* restrict minus = &in[yWidth];
 		register const PPMPixel* restrict plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
+		#pragma GCC ivdep
 		for(int x = width - 2 * size - 1; x > 0; --x) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 			sum -= (v4Accurate){minus->red, minus->green, minus->blue, 0.0f};
@@ -87,6 +88,7 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 			register const v4Accurate* restrict minus = &in[yWidth];
 			register const v4Accurate* restrict plus = &in[yWidth + size * 2 + 1];
 			#pragma GCC unroll 16
+			#pragma GCC ivdep
 			for(int x = width - 2 * size - 1; x > 0; --x) {
 				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 				*res++ = sum += *plus++ - *minus++;
@@ -132,6 +134,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 		register const v4Accurate* restrict minus = &in[yWidth];
 		register const v4Accurate* restrict plus = &in[yWidth + size * 2 + 1];
 		#pragma GCC unroll 16
+		#pragma GCC ivdep
 		for(int x = width - 2 * size - 1; x > 0; --x) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);		
 			*res = sum += *plus++ - *minus++;
@@ -171,6 +174,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 			register const v4Accurate* restrict minus = &in[xHeight];
 			register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
 			#pragma GCC unroll 16
+			#pragma GCC ivdep
 			for(int x = height - 2 * size - 1; x > 0; --x) {
 				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 				*res++ = sum += *plus++ - *minus++;
@@ -241,6 +245,7 @@ __attribute__((hot)) void blurIterationVertical4(v4Accurate* restrict in, v4Accu
 			register const v4Accurate* restrict minus = &in[xHeight];
 			register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
 			#pragma GCC unroll 16
+			#pragma GCC ivdep
 			for(int x = height - 2 * size - 1; x > 0; --x) {
 				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 				*res++ = sum += *plus++ - *minus++;
@@ -295,7 +300,9 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		register const v4Accurate* restrict minus = &in[xHeight];
 		register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
 		#pragma GCC unroll 16
+		#pragma GCC ivdep
 		for(int y = size + 1; y < height - size; ++y) {
+			__builtin_prefetch((void*)res + PF_OFFSET, 0, 3);
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 			__builtin_prefetch((void*)resSmall + PF_OFFSET, 0, 3);
 			sum += *plus++ - *minus++;
@@ -334,6 +341,7 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 				__builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
 				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
 				#pragma GGC unroll 8
+				#pragma GCC ivdep
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
