@@ -261,7 +261,7 @@ __attribute__((hot)) void blurIterationVertical4(v4Accurate* restrict in, v4Accu
 __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result, const v4Accurate* restrict small, const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate divisor = (v4Accurate){1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f};
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
-	v4Accurate diff;
+	
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		register const int xHeight = x * height;
@@ -272,7 +272,7 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		}
 
 		out[xHeight + 0] = sum * divisor * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
-		diff = out[xHeight + 0] - small[xHeight + 0];
+		register v4Accurate diff = out[xHeight + 0] - small[xHeight + 0];
 		result[0 * width + x] = (PPMPixel){
 			diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 			diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
@@ -282,7 +282,7 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		for(int y = 1; y <= size; ++y) {
 			sum += in[xHeight + y + size];
 			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
-			diff = out[xHeight + y] - small[xHeight + y];
+			register v4Accurate diff = out[xHeight + y] - small[xHeight + y];
 			result[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
@@ -297,9 +297,10 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		#pragma GCC unroll 16
 		for(int y = size + 1; y < height - size; ++y) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
+			__builtin_prefetch((void*)resSmall + PF_OFFSET, 0, 3);
 			sum += *plus++ - *minus++;
 			*res = divisor * sum;
-			diff = *res++ - *resSmall++;
+			register v4Accurate diff = *res++ - *resSmall++;
 			result[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
@@ -310,7 +311,7 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		for(int y = height - size; y < height; ++y) {
 			sum -= in[xHeight + y - size - 1];
 			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
-			diff = out[xHeight + y] - small[xHeight + y];
+			register v4Accurate diff = out[xHeight + y] - small[xHeight + y];
 			result[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
