@@ -14,17 +14,14 @@ extern "C"{
     #include "ppm.h"
 }
 
+typedef float v4Accurate __attribute__((vector_size(16)));
 
 using namespace std;
 using namespace cl;
 
 typedef struct {
-    float red, green, blue;
-} AccuratePixel;
-
-typedef struct {
     int x, y;
-    AccuratePixel *data;
+    v4Accurate *data;
 } AccurateImage;
 
 void errorAndExit(string error_message) {
@@ -38,11 +35,11 @@ AccurateImage* convertToAccurateImage(PPMImage* image) {
     AccurateImage* imageAccurate = (AccurateImage*)malloc(sizeof(AccurateImage));
     imageAccurate->x = width;
     imageAccurate->y = height;
-    imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
+    imageAccurate->data = (v4Accurate*)aligned_alloc(64, size * sizeof(v4Accurate));
     for(int i = 0; i < image->x * image->y; i++) {
-        imageAccurate->data[i].red   = (float) image->data[i].red;
-        imageAccurate->data[i].green = (float) image->data[i].green;
-        imageAccurate->data[i].blue  = (float) image->data[i].blue;
+        imageAccurate->data[i][0]   = (float) image->data[i].red;
+        imageAccurate->data[i][1] = (float) image->data[i].green;
+        imageAccurate->data[i][2]  = (float) image->data[i].blue;
     }
     return imageAccurate;
 }
@@ -55,9 +52,9 @@ AccurateImage* copyAccurateImage(AccurateImage* image, bool allocate_data, bool 
     imageAccurate->x = width;
     imageAccurate->y = height;
     if(allocate_data){
-        imageAccurate->data = (AccuratePixel*)malloc(size * sizeof(AccuratePixel));
+        imageAccurate->data = (v4Accurate*)aligned_alloc(64, size * sizeof(v4Accurate));
         if(copy_pixels){
-            memcpy(imageAccurate->data, image->data, size * sizeof(AccuratePixel));
+            memcpy(imageAccurate->data, image->data, size * sizeof(v4Accurate));
         }
     }
     return imageAccurate;
@@ -66,41 +63,42 @@ AccurateImage* copyAccurateImage(AccurateImage* image, bool allocate_data, bool 
 PPMImage* convertToPPPMImage(AccurateImage *imageIn) {
     PPMImage *imageOut;
     imageOut = (PPMImage *)malloc(sizeof(PPMImage));
-    imageOut->data = (PPMPixel*)malloc(imageIn->x * imageIn->y * sizeof(PPMPixel));
+    imageOut->data = (PPMPixel*)aligned_alloc(64, imageIn->x * imageIn->y * sizeof(PPMPixel));
 
     imageOut->x = imageIn->x;
     imageOut->y = imageIn->y;
 
     for(int i = 0; i < imageIn->x * imageIn->y; i++) {
-        imageOut->data[i].red = imageIn->data[i].red;
-        imageOut->data[i].green = imageIn->data[i].green;
-        imageOut->data[i].blue = imageIn->data[i].blue;
+        imageOut->data[i].red = imageIn->data[i][0];
+        imageOut->data[i].green = imageIn->data[i][1];
+        imageOut->data[i].blue = imageIn->data[i][2];
     }
     return imageOut;
 }
 
 
 // Perform the final step, and return it as ppm.
-PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLarge) {	
+PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLarge, const int sizeSmall, const int sizeLarge) {
+    const v4Accurate divisorSmall = (v4Accurate){1.0f / pow(sizeSmall * 2 + 1, 10), 1.0f / pow(sizeSmall * 2 + 1, 10), 1.0f / pow(sizeSmall * 2 + 1, 10), 1.0f};
+    const v4Accurate divisorLarge = (v4Accurate){1.0f / pow(sizeLarge * 2 + 1, 10), 1.0f / pow(sizeLarge * 2 + 1, 10), 1.0f / pow(sizeLarge * 2 + 1, 10), 1.0f};
+
     const int width = imageInSmall->x;
 	const int height = imageInSmall->y;
 	const int size = width * height;
 
 	PPMImage* imageOut = (PPMImage*)malloc(sizeof(PPMImage));
-	imageOut->data = (PPMPixel*)malloc(size * sizeof(PPMPixel));
+	imageOut->data = (PPMPixel*)aligned_alloc(64, size * sizeof(PPMPixel));
 
 	imageOut->x = width;
 	imageOut->y = height;
 	for(int i = 0; i < size; i++) {
-		float red = imageInLarge->data[i].red - imageInSmall->data[i].red;
-		float green = imageInLarge->data[i].green - imageInSmall->data[i].green;
-		float blue = imageInLarge->data[i].blue - imageInSmall->data[i].blue;
-		red += 257.0 * (red < 0.0);
-		green += 257.0 * (green < 0.0);
-		blue += 257.0 * (blue < 0.0);
-		imageOut->data[i].red = red;
-		imageOut->data[i].green = green;
-		imageOut->data[i].blue = blue;
+		const v4Accurate diff = imageInLarge->data[i] * divisorLarge - imageInSmall->data[i] * divisorSmall;
+		
+        imageOut->data[i] = (PPMPixel){
+            (diff[0] < 0) ? diff[0] + 257 : diff[0],
+            (diff[1] < 0) ? diff[1] + 257 : diff[1],
+            (diff[2] < 0) ? diff[2] + 257 : diff[2]
+        };
 	}
 	
 	return imageOut;
@@ -173,7 +171,7 @@ public:
     }
     AccurateImage* blur(AccurateImage* image, int size){
 
-        std::size_t bufferSize = image->x * image->y * sizeof(AccuratePixel);
+        std::size_t bufferSize = image->x * image->y * sizeof(v4Accurate);
         Buffer buffer1(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
         Buffer buffer2(context, CL_MEM_READ_WRITE|CL_MEM_READ_WRITE, bufferSize);
 
@@ -189,7 +187,7 @@ public:
 
         events.emplace_back(make_pair("map buffer in memory", Event()));
 
-        result->data = (AccuratePixel*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
+        result->data = (v4Accurate*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         return result;
     }
     void finish(){
@@ -281,7 +279,7 @@ int main(int argc, char** argv){
     PPMImage* final_images[3];
     #pragma omp parallel for num_threads(3)
     for(int i = 0; i < 3; i++){
-        final_images[i] = imageDifference(images[i], images[i+1]);
+        final_images[i] = imageDifference(images[i], images[i+1], sizes[i], sizes[i+1]);
     }
 
     if(argc > 1) {
