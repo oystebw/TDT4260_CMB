@@ -61,6 +61,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		// this is the 'important loop', and consists of over 99% of the runtime
 		#pragma GCC unroll 16
+		#pragma GCC ivdep
 		for(int x = size + 1; x < width - size; ++x) {
 			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3); // two cachelines ahead
 			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
@@ -106,6 +107,7 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 			}
 
 			#pragma GCC unroll 16
+			#pragma GCC ivdep
 			for(int x = size + 1; x < width - size; ++x) {
 				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 				out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
@@ -155,6 +157,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 		}
 
 		#pragma GCC unroll 16
+		#pragma GCC ivdep
 		for(int x = size + 1; x < width - size; ++x) {
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 			out[x * height + y] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
@@ -195,6 +198,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 			}
 
 			#pragma GCC unroll 16
+			#pragma GCC ivdep
 			for(int y = size + 1; y < height - size; ++y) {
 				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
 				out[xHeight + y] = sum += in[xHeight + y + size] - in[xHeight + y - size - 1];
@@ -233,6 +237,7 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 				__builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
 				__builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
 				#pragma GGC unroll 8
+				#pragma GCC ivdep
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					register const v4Accurate diff = large[xHeight + y] * divisorLarge - small[xHeight + y] * divisorSmall;
 					imageOut[y * width + x] = (PPMPixel){
