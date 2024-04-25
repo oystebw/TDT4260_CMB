@@ -97,9 +97,9 @@ PPMImage* imageDifference(AccurateImage *imageInSmall, AccurateImage *imageInLar
             const v4Accurate diff = imageInLarge->data[yWidth + x] * divisorLarge - imageInSmall->data[yWidth + x] * divisorSmall;
             
             imageOut->data[x * height + y] = (PPMPixel){
-                (diff[0] < 0) ? diff[0] + 257 : diff[0],
-                (diff[1] < 0) ? diff[1] + 257 : diff[1],
-                (diff[2] < 0) ? diff[2] + 257 : diff[2]
+                (diff[0] < 0.0) ? diff[0] + 257.0 : diff[0],
+                (diff[1] < 0.0) ? diff[1] + 257.0 : diff[1],
+                (diff[2] < 0.0) ? diff[2] + 257.0 : diff[2]
             };
         }
 	}
@@ -187,7 +187,7 @@ public:
 
         AccurateImage* result = copyAccurateImage(image, true, false);
 
-        events.emplace_back(make_pair("map buffer in memory", Event()));
+        events.emplace_back(make_pair("map buffer in memory", Event())); 
 
         result->data = (v4Accurate*)queue.enqueueMapBuffer(buffer1, CL_FALSE, CL_MAP_READ, 0, bufferSize, nullptr, &events.back().second);
         return result;
@@ -243,6 +243,57 @@ private:
         );
 
         // create Event for profiling
+        events.emplace_back(make_pair("kernelHorizontal", Event()));
+        // set call arguments
+        kernelHorizontal.setArg(0, dst);
+        kernelHorizontal.setArg(1, src);
+        kernelHorizontal.setArg(2, image->x);
+        kernelHorizontal.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelHorizontal, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->y), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        // create Event for profiling
+        events.emplace_back(make_pair("kernelHorizontal", Event()));
+        // set call arguments
+        kernelHorizontal.setArg(0, src);
+        kernelHorizontal.setArg(1, dst);
+        kernelHorizontal.setArg(2, image->x);
+        kernelHorizontal.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelHorizontal, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->y), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        // create Event for profiling
+        events.emplace_back(make_pair("kernelHorizontal", Event()));
+        // set call arguments
+        kernelHorizontal.setArg(0, dst);
+        kernelHorizontal.setArg(1, src);
+        kernelHorizontal.setArg(2, image->x);
+        kernelHorizontal.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelHorizontal, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->y), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        // create Event for profiling
         events.emplace_back(make_pair("kernelHorizontalTranspose", Event()));
         // set call arguments
         kernelHorizontalTranspose.setArg(0, src);
@@ -254,6 +305,70 @@ private:
                 kernelHorizontalTranspose, // kernel to queue
                 NullRange, // use no offset
                 NDRange(image->y), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        events.emplace_back(make_pair("kernelVertical", Event()));
+        // set call arguments
+        kernelVertical.setArg(0, dst);
+        kernelVertical.setArg(1, src);
+        kernelVertical.setArg(2, image->y);
+        kernelVertical.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelVertical, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->x), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        events.emplace_back(make_pair("kernelVertical", Event()));
+        // set call arguments
+        kernelVertical.setArg(0, src);
+        kernelVertical.setArg(1, dst);
+        kernelVertical.setArg(2, image->y);
+        kernelVertical.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelVertical, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->x), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        events.emplace_back(make_pair("kernelVertical", Event()));
+        // set call arguments
+        kernelVertical.setArg(0, dst);
+        kernelVertical.setArg(1, src);
+        kernelVertical.setArg(2, image->y);
+        kernelVertical.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelVertical, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->x), // 1D kernel
+                NullRange, // use no local range
+                nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
+                &events.back().second // Event to use for profiling
+        );
+
+        events.emplace_back(make_pair("kernelVertical", Event()));
+        // set call arguments
+        kernelVertical.setArg(0, src);
+        kernelVertical.setArg(1, dst);
+        kernelVertical.setArg(2, image->y);
+        kernelVertical.setArg(3, size);
+        // call 2D kernel
+        queue.enqueueNDRangeKernel(
+                kernelVertical, // kernel to queue
+                NullRange, // use no offset
+                NDRange(image->x), // 1D kernel
                 NullRange, // use no local range
                 nullptr, // we use the queue in sequential mode so we don't have to specify Events that need to finish before
                 &events.back().second // Event to use for profiling
