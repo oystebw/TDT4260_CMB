@@ -73,7 +73,7 @@ PPMImage* readStreamPPM(FILE* restrict fp) {
 	}
 
 	//read pixel data from file
-     setvbuf(fp, (char*)image->data, _IOFBF, 3 * image->x * image->y);
+     setvbuf(fp, (char*)image->data, _IOFBF, 3 * image->x * image->y); // buffered read
 	if (fread(image->data, 3 * image->x, image->y, fp) != image->y) {
 		fprintf(stderr, "Error loading image\n");
 		exit(1);
@@ -150,7 +150,7 @@ PPMImage* readPPM(const char* restrict filename)
     }
 
     //read pixel data from file
-    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y);
+    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered read
     if (fread(img->data, 3 * img->x, img->y, fp) != img->y) {
          fprintf(stderr, "Error loading image '%s'\n", filename);
          exit(1);
@@ -181,7 +181,7 @@ void writeStreamPPM(FILE* restrict fp, const PPMImage* restrict img) {
 	fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
 	// pixel data
-     setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y);
+     setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered write
 	fwrite(img->data, 3 * img->x, img->y, fp);
 }
 
@@ -209,7 +209,7 @@ void writePPM(const char* restrict filename, const PPMImage* restrict img)
     fprintf(fp, "%d\n",RGB_COMPONENT_COLOR);
 
     // pixel data
-    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y);
+    setvbuf(fp, (char*)img->data, _IOFBF, 3 * img->x * img->y); // buffered write
     fwrite(img->data, 3 * img->x, img->y, fp);
     fclose(fp);
 }

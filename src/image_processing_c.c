@@ -208,12 +208,12 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 				sum -= in[xHeight + y - size - 1];
 				out[xHeight + y] = sum * multiplier / (v4Accurate){sizef + height - y, sizef + height - y, sizef + height - y, 1.0f};
 			}
-			// swap
+			// swap in and out
 			v4Accurate* tmp = in;
 			in = out;
 			out = tmp;
 		}
-		// swap
+		// swap in and out
 		v4Accurate* tmp = in;
 		in = out;
 		out = tmp;
@@ -231,11 +231,11 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				register const int xHeight = x * height;
 				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 2 + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 2 + yy], 0, 3);
 				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height + yy + 4], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
 				#pragma GGC unroll 8
 				#pragma GCC ivdep
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
