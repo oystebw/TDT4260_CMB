@@ -147,11 +147,12 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 
 __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
+	register const v4Accurate divisor = (v4Accurate){1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f};
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int x = 0; x < width; ++x) {
 		register const int xHeight = x * height;
 
-		for(int iteration = 0; iteration < 5; ++iteration) {
+		for(int iteration = 0; iteration < 4; ++iteration) {
 			
 			register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
 
@@ -184,16 +185,142 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 			in = out;
 			out = tmp;
 		}
-		// swap
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
+
+		register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int y = 0; y <= size; ++y) {
+			sum += in[xHeight + y];
+		}
+
+		out[xHeight + 0] = sum * divisor * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+
+		for(int y = 1; y <= size; ++y) {
+			sum += in[xHeight + y + size];
+			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
+		}
+
+		register v4Accurate* restrict res = &out[xHeight + size + 1];
+		register const v4Accurate* restrict minus = &in[xHeight];
+		register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
+		#pragma GCC unroll 16
+		for(int x = height - 2 * size - 1; x > 0; --x) {
+			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
+			sum += *plus++ - *minus++;
+			*res++ = divisor * sum;
+		}
+
+		for(int y = height - size; y < height; ++y) {
+			sum -= in[xHeight + y - size - 1];
+			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
+		}
 	}
 }
 
-__attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height, const float sizeSmall, const float sizeLarge) {
-	register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
-	register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f};
+__attribute__((hot)) void blurIterationVertical4(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
+	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	for(int x = 0; x < width; ++x) {
+		register const int xHeight = x * height;
+
+		for(int iteration = 0; iteration < 4; ++iteration) {
+			
+			register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+			for(int y = 0; y <= size; ++y) {
+				sum += in[xHeight + y];
+			}
+
+			out[xHeight + 0] = sum * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+
+			for(int y = 1; y <= size; ++y) {
+				sum += in[xHeight + y + size];
+				out[xHeight + y] = sum * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
+			}
+
+			register v4Accurate* restrict res = &out[xHeight + size + 1];
+			register const v4Accurate* restrict minus = &in[xHeight];
+			register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
+			#pragma GCC unroll 16
+			for(int x = height - 2 * size - 1; x > 0; --x) {
+				__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
+				*res++ = sum += *plus++ - *minus++;
+			}
+
+			for(int y = height - size; y < height; ++y) {
+				sum -= in[xHeight + y - size - 1];
+				out[xHeight + y] = sum * multiplier / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
+			}
+			// swap
+			v4Accurate* tmp = in;
+			in = out;
+			out = tmp;
+		}
+	}
+}
+
+__attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result, const v4Accurate* restrict small, const v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	register const v4Accurate divisor = (v4Accurate){1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f / pow((2.0f * size + 1.0f), 10), 1.0f};
+	register const v4Accurate multiplier = (v4Accurate){(2 * size + 1), (2 * size + 1), (2 * size + 1), 1.0f};
+	v4Accurate diff;
+	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	for(int x = 0; x < width; ++x) {
+		register const int xHeight = x * height;
+		register v4Accurate sum = {0.0, 0.0, 0.0, 0.0};
+
+		for(int y = 0; y <= size; ++y) {
+			sum += in[xHeight + y];
+		}
+
+		out[xHeight + 0] = sum * divisor * multiplier / (v4Accurate){size + 1, size + 1, size + 1, 1.0f};
+		diff = out[xHeight + 0] - small[xHeight + 0];
+		result[0 * width + x] = (PPMPixel){
+			diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+			diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+			diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+		};
+
+		for(int y = 1; y <= size; ++y) {
+			sum += in[xHeight + y + size];
+			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){y + size + 1, y + size + 1, y + size + 1, 1.0f};
+			diff = out[xHeight + y] - small[xHeight + y];
+			result[y * width + x] = (PPMPixel){
+				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+				diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+			};
+		}
+
+		register v4Accurate* restrict res = &out[xHeight + size + 1];
+		register v4Accurate* restrict resSmall = &small[xHeight + size + 1];
+		register const v4Accurate* restrict minus = &in[xHeight];
+		register const v4Accurate* restrict plus = &in[xHeight + size * 2 + 1];
+		#pragma GCC unroll 16
+		for(int y = size + 1; y < height - size; ++y) {
+			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
+			sum += *plus++ - *minus++;
+			*res++ = divisor * sum;
+			diff = *res - *resSmall;
+			result[y * width + x] = (PPMPixel){
+				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+				diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+			};
+		}
+
+		for(int y = height - size; y < height; ++y) {
+			sum -= in[xHeight + y - size - 1];
+			out[xHeight + y] = sum * divisor * multiplier / (v4Accurate){size + height - y, size + height - y, size + height - y, 1.0f};
+			diff = out[xHeight + y] - small[xHeight + y];
+			result[y * width + x] = (PPMPixel){
+				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
+				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
+				diff[2] < 0.0 ? diff[2] + 257.0 : diff[2]
+			};
+		}
+	}
+}
+
+__attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4Accurate* restrict small, const v4Accurate* restrict large, const int width, const int height) {
 	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
@@ -207,7 +334,7 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
 				#pragma GGC unroll 8
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
-					register const v4Accurate diff = large[xHeight + y] * divisorLarge - small[xHeight + y] * divisorSmall;
+					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
 					imageOut[y * width + x] = (PPMPixel){
 						diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 						diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
@@ -243,9 +370,8 @@ int main(int argc, char** argv) {
 	blurIterationHorizontalFirst(image->data,  scratch,  3, width, height);
 	blurIterationHorizontal( scratch,  two,  3, width, height);
 	blurIterationHorizontalTranspose( two,  scratch,  3, width, height);
-	blurIterationVertical( scratch,  two,  3, width, height);
-
-	imageDifference(result->data,  one,  two, width, height, 2.0f, 3.0f);
+	blurIterationVertical4( scratch,  two,  3, width, height);
+	blurIterationVerticalAndDiff(result->data, one, scratch, two, 3, width, height);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  5, width, height);
@@ -253,7 +379,7 @@ int main(int argc, char** argv) {
 	blurIterationHorizontalTranspose( one,  scratch,  5, width, height);
 	blurIterationVertical( scratch,  one,  5, width, height);
 
-	imageDifference(result->data,  two,  one, width, height, 3.0f, 5.0f);
+	imageDifference(result->data,  two,  one, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  8, width, height);
@@ -261,7 +387,7 @@ int main(int argc, char** argv) {
 	blurIterationHorizontalTranspose( two,  scratch,  8, width, height);
 	blurIterationVertical( scratch,  two,  8, width, height);
 
-	imageDifference(result->data,  one,  two, width, height, 5.0f, 8.0f);
+	imageDifference(result->data,  one,  two, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
