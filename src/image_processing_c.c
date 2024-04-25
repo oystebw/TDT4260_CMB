@@ -298,8 +298,8 @@ __attribute__((hot)) void blurIterationVerticalAndDiff(PPMPixel* restrict result
 		for(int y = size + 1; y < height - size; ++y) {
 			__builtin_prefetch((void*)plus + PF_OFFSET, 0, 3);
 			sum += *plus++ - *minus++;
-			*res++ = divisor * sum;
-			diff = *res - *resSmall;
+			*res = divisor * sum;
+			diff = *res++ - *resSmall++;
 			result[y * width + x] = (PPMPixel){
 				diff[0] < 0.0 ? diff[0] + 257.0 : diff[0],
 				diff[1] < 0.0 ? diff[1] + 257.0 : diff[1],
@@ -378,16 +378,14 @@ int main(int argc, char** argv) {
 	blurIterationHorizontal( scratch,  one,  5, width, height);
 	blurIterationHorizontalTranspose( one,  scratch,  5, width, height);
 	blurIterationVertical( scratch,  one,  5, width, height);
-
-	imageDifference(result->data,  two,  one, width, height);
+	blurIterationVerticalAndDiff(result->data, two, scratch, one, 5, width, height);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	blurIterationHorizontalFirst(image->data,  scratch,  8, width, height);
 	blurIterationHorizontal( scratch,  two,  8, width, height);
 	blurIterationHorizontalTranspose( two,  scratch,  8, width, height);
 	blurIterationVertical( scratch,  two,  8, width, height);
-
-	imageDifference(result->data,  one,  two, width, height);
+	blurIterationVerticalAndDiff(result->data, one, scratch, two, 8, width, height);
 	(argc > 1) ? writePPM("flower_medium.ppm", result) : writeStreamPPM(stdout, result);
 }
 
