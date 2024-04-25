@@ -109,6 +109,11 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 			#pragma GCC unroll 16
 			#pragma GCC ivdep
 			for(int x = size + 1; x < width - size; ++x) {
+				/*
+				We only need to prefetch once for every cacheline, but the cost of having a double loop
+				with bounds checking (since width - 2*size - 1 is not guaranteed to be a multiple of 4),
+				was more expensive than just prefetching every iteration...
+				*/
 				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 				out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
 			}
@@ -257,6 +262,16 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	}
 }
 
+/*
+Just to clean up and explicitly show what happens to the image.
+*/
+void blurImage(const PPMPixel* restrict imageIn, v4Accurate* restrict scratch, v4Accurate* restrict result, const int kernelSize, const int width, const int height) {
+	blurIterationHorizontalFirst(imageIn, scratch, kernelSize, width, height);
+	blurIterationHorizontal(scratch, result, kernelSize, width, height);
+	blurIterationHorizontalTranspose(result, scratch, kernelSize, width, height);
+	blurIterationVertical(scratch, result, kernelSize, width, height);
+}
+
 int main(int argc, char** argv) {
 
     const PPMImage* restrict image = (argc > 1) ? readPPM("flower.ppm") : readStreamPPM(stdin);
@@ -281,36 +296,24 @@ int main(int argc, char** argv) {
 	result->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * width * height);
 
 	// tiny image
-	blurIterationHorizontalFirst(image->data, scratch, 2, width, height);
-	blurIterationHorizontal(scratch, one, 2, width, height);
-	blurIterationHorizontalTranspose(one, scratch, 2, width, height);
-	blurIterationVertical(scratch, one, 2, width, height);
+	blurImage(image->data, scratch, one, 2, width, height);
 
 	// small image
-	blurIterationHorizontalFirst(image->data, scratch, 3, width, height);
-	blurIterationHorizontal(scratch, two, 3, width, height);
-	blurIterationHorizontalTranspose(two, scratch, 3, width, height);
-	blurIterationVertical(scratch, two, 3, width, height);
+	blurImage(image->data, scratch, two, 3, width, height);
 
 	// tinyPPM
 	imageDifference(result->data,  one,  two, width, height, 2.0f, 3.0f);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	// medium image
-	blurIterationHorizontalFirst(image->data, scratch,  5, width, height);
-	blurIterationHorizontal(scratch, one, 5, width, height);
-	blurIterationHorizontalTranspose(one, scratch,  5, width, height);
-	blurIterationVertical(scratch, one, 5, width, height);
+	blurImage(image->data, scratch, one, 5, width, height);
 
 	// smallPPM
 	imageDifference(result->data,  two,  one, width, height, 3.0f, 5.0f);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	// large image
-	blurIterationHorizontalFirst(image->data, scratch,  8, width, height);
-	blurIterationHorizontal(scratch, two, 8, width, height);
-	blurIterationHorizontalTranspose(two, scratch,  8, width, height);
-	blurIterationVertical(scratch, two, 8, width, height);
+	blurImage(image->data, scratch, two, 8, width, height);
 
 	// mediumPPM
 	imageDifference(result->data,  one,  two, width, height, 5.0f, 8.0f);
