@@ -156,7 +156,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 			sum1 += in[yWidth + x1 + size];
 			out[yWidth + x1] = sum1 * multiplier / (v4Accurate){sizef + x1 + 1, sizef + x1 + 1, sizef + x1 + 1, 1.0f};
 		}
-		for(int x1 = size + 1; x1 < 2 * size + 2 + 10; ++x1) {
+		for(int x1 = size + 1; x1 < 2 * size + 2 + 100; ++x1) {
 			out[yWidth + x1] = sum1 += in[yWidth + x1 + size] - in[yWidth + x1 - size - 1];
 		}
 		// setup first iteration
@@ -174,10 +174,10 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 
 		#pragma GCC unroll 16
 		#pragma GCC ivdep
-		for(int x = 2 * size + 2 + 10; x < width - size; ++x) {
+		for(int x = 2 * size + 2 + 100; x < width - size; ++x) {
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 			out[yWidth + x] = sum1 += in[yWidth + x + size] - in[yWidth + x - size - 1];
-			in[yWidth + x - size - 1 - 10] = sum2 += out[yWidth + x - 1 - 10] - out[yWidth + x - 2 * size - 2 - 10];
+			in[yWidth + x - size - 1 - 100] = sum2 += out[yWidth + x - 1 - 100] - out[yWidth + x - 2 * size - 2 - 100];
 		}
 
 		// finishing first iteration
@@ -188,7 +188,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 		// finishing first iteration
 
 		// finishing second iteration
-		for(int x2 = width - 2 * size - 1 - 11; x2 < width - size; ++x2) {
+		for(int x2 = width - 2 * size - 1 - 100; x2 < width - size; ++x2) {
 			in[yWidth + x2] = sum2 += out[yWidth + x2 + size] -= out[yWidth + x2 - size - 1];
 		}
 		for(int x2 = width - size; x2 < width; ++x2) {
