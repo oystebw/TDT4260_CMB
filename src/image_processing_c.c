@@ -91,8 +91,8 @@ __attribute__((hot)) void blurIterationHorizontal(const PPMPixel* restrict ppm, 
 		#pragma GCC ivdep
 		for(int x = 4 * size + 4; x < width - size; ++x) {
 			__builtin_prefetch(&ppm[yWidth + x + size + 42], 0, 3); // two cachelines ahead
-			__builtin_prefetch(&out[yWidth + x - 1 + PF_OFFSET], 0, 3); // two cachelines ahead
-			__builtin_prefetch(&in[yWidth + x - size - 2 + PF_OFFSET], 0, 3); // two cachelines ahead
+			// __builtin_prefetch(&out[yWidth + x - 1 + PF_OFFSET], 0, 3); // two cachelines ahead
+			// __builtin_prefetch(&in[yWidth + x - size - 2 + PF_OFFSET], 0, 3); // two cachelines ahead
 			sum1 -= (v4Accurate){ppm[yWidth + x - size - 1].red, ppm[yWidth + x - size - 1].green, ppm[yWidth + x - size - 1].blue, 0.0f};
 			sum1 += (v4Accurate){ppm[yWidth + x + size].red, ppm[yWidth + x + size].green, ppm[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum1;
@@ -268,7 +268,7 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 		#pragma GCC ivdep
 		for(int y = 5 * size + 5; y < height - size; ++y) {
 			__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
-			__builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
+			// __builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
 			out[xHeight + y] = sum1 += in[xHeight + y + size] - in[xHeight + y - size - 1];
 			in[xHeight + y - size - 1] = sum2 += out[xHeight + y - 1] - out[xHeight + y - 2 * size - 2];
 			out[xHeight + y - 2 * size - 2] = sum3 += in[xHeight + y - size - 2] - in[xHeight + y - 3 * size - 3];
@@ -338,18 +338,19 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 	// register const v4Accurate divisorSmall = (v4Accurate){1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f / pow((2.0f * sizeSmall + 1.0f), 10), 1.0f};
 	// register const v4Accurate divisorLarge = (v4Accurate){1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f / pow((2.0f * sizeLarge + 1.0f), 10), 1.0f};
 	
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	// #pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	#pragma omp target map(to: small[0:width*height], large[0:width*height]) map(from: imageOut[0:width*height])
 	for(int yy = 0; yy < height; yy += BLOCKSIZE) {
 		for(int xx = 0; xx < width; xx += BLOCKSIZE) {
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				register const int xHeight = x * height;
-				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height * 2 + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height * 2 + yy], 0, 3);
-				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
-				#pragma GGC unroll 8
+				// // first four elements in tight loop
+				// __builtin_prefetch(&large[xHeight + height * 2 + yy], 0, 3);
+				// __builtin_prefetch(&small[xHeight + height * 2 + yy], 0, 3);
+				// // last four elements in tight loop
+				// __builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
+				// __builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
+				// #pragma GGC unroll 8
 				#pragma GCC ivdep
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
 					register const v4Accurate diff = large[xHeight + y] - small[xHeight + y];
