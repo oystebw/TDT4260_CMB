@@ -429,7 +429,7 @@ __attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict 
 
 		// finishing third iteration
 		for(int y3 = height - 3 * size - 2; y3 < height - size; ++y3) {
-			out[xHeight + y3] = sum3 += in[xHeight + y3 + size] -= in[xHeight + y3 - size - 1];
+			out[xHeight + y3] = sum3 += in[xHeight + y3 + size] - in[xHeight + y3 - size - 1];
 		}
 		for(int y3 = height - size; y3 < height; ++y3) {
 			sum3 -= in[xHeight + y3 - size - 1];
@@ -439,7 +439,7 @@ __attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict 
 
 		// finishing fourth iteration
 		for(int y4 = height - 4 * size - 3; y4 < height - size; ++y4) {
-			in[xHeight + y4] = sum4 += out[xHeight + y4 + size] -= out[xHeight + y4 - size - 1];
+			in[xHeight + y4] = sum4 += out[xHeight + y4 + size] - out[xHeight + y4 - size - 1];
 		}
 		for(int y4 = height - size; y4 < height; ++y4) {
 			sum4 -= out[xHeight + y4 - size - 1];
@@ -449,7 +449,7 @@ __attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict 
 
 		// finishing fifth iteration
 		for(int y5 = height - 5 * size - 4; y5 < height - size; ++y5) {
-			out[xHeight + y5] = sum5 += in[xHeight + y5 + size] -= in[xHeight + y5 - size - 1];
+			out[xHeight + y5] = sum5 += in[xHeight + y5 + size] - in[xHeight + y5 - size - 1];
 		}
 		for(int y5 = height - size; y5 < height; ++y5) {
 			sum5 -= in[xHeight + y5 - size - 1];
