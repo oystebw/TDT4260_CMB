@@ -18,124 +18,7 @@ typedef float v4Accurate __attribute__((vector_size(16)));
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
 
-/*
-First horizontal blur. No need to convert PPMImage to AccurateImage before starting the Gaussian blur.
-Notice the running sum used. This is super efficient, and makes the run time independent of kernel size.
-We only do, on average, two loads, two summation, and one store per pixel, since the three channels are SIMD'ed.
-*/
-__attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	
-	const float sizef = (float)size;
-	/*
-	Notice 'out[yWidth + x] = sum;' in the most important loop. We don't divide by the number of elements,
-	but rather divide by the number of elements^10 after all blurring (in imageDifference), so we only perform 1/10 of the
-	divisions as a naive approach. Notice that store operations outside of this loop are multiplied
-	by 'multiplier' and divided by another number. This is because they are summed by fewer numbers,
-	so it is done to scale up the edge pixels by the same amount as the rest of the image.
-	This makes it possible to divide all pixels by (2 * kernelSize + 1)^10 at the end.
-	It is also necessary to compute the correct result.
-	*/
-	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
-	
-	/*
-	We schedule dynamic due to the nature of the CPU, which consists of four A15 (performance) cores
-	and four A7 (energy) cores. The P cores are much faster, and the dynamic scheduling mitigates
-	load unbalancing. Going from static to dynamic improved the runtime by approx. 20-30%
-	*/
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
-		register const int yWidth = y * width;
-
-		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
-
-		for(int x = 0; x <= size; ++x) {
-			sum += (v4Accurate){in[yWidth + x].red, in[yWidth + x].green, in[yWidth + x].blue, 0.0f};
-		}
-
-		out[yWidth + 0] = sum * multiplier / (v4Accurate){sizef + 1.0f, sizef + 1.0f, sizef + 1.0f, 1.0f};
-
-		for(int x = 1; x < size + 1; ++x) {
-			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
-			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1.0f, sizef + x + 1.0f, sizef + x + 1.0f, 1.0f};
-		}
-
-		// this is the 'important loop', and consists of over 99% of the runtime
-		#pragma GCC unroll 16
-		#pragma GCC ivdep
-		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + 42], 0, 3); // two cachelines ahead
-			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
-			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
-			out[yWidth + x] = sum;
-		}
-
-		for(int x = width - size; x < width; ++x) {
-			sum -= (v4Accurate){in[yWidth + x - size - 1].red, in[yWidth + x - size - 1].green, in[yWidth + x - size - 1].blue, 0.0f};
-			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + width - x, sizef + width - x, sizef + width - x, 1.0f};
-		}
-	}
-}
-
-
-/*
-The next three horizontal blurs. We do each row three times before going one row down, to increase cache locality.
-In addition, this makes it possible to have the #pragma omp in the outer loop, since each row is independent.
-This reduces multiprocessing overhead.
-*/
-__attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	
-	const float sizef = (float)size;
-	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
-	
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int y = 0; y < height; ++y) {
-		register const int yWidth = y * width;
-
-		for(int iteration = 0; iteration < 3; ++iteration) {
-			
-			register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
-
-			for(int x = 0; x < size + 1; ++x) {
-				sum += in[yWidth + x];
-			}
-
-			out[yWidth + 0] = sum * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
-
-			for(int x = 1; x < size + 1; ++x) {
-				sum += in[yWidth + x + size];
-				out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1, sizef + x + 1, sizef + x + 1, 1.0f};
-			}
-
-			#pragma GCC unroll 16
-			#pragma GCC ivdep
-			for(int x = size + 1; x < width - size; ++x) {
-				/*
-				We only need to prefetch once for every cacheline, but the cost of having a double loop
-				with bounds checking (since width - 2*size - 1 is not guaranteed to be a multiple of 4),
-				was more expensive than just prefetching every iteration...
-				*/
-				__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
-				out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
-			}
-
-			for(int x = width - size; x < width; ++x) {
-				sum -= in[yWidth + x - size - 1];
-				out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + width - x, sizef + width - x, sizef + width - x, 1.0f};
-			}
-
-			// swap in and out 
-			v4Accurate* tmp = in;
-			in = out;
-			out = tmp;
-		}
-		// swap in and out
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
-	}
-}
-
-__attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* restrict ppm, v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+__attribute__((hot)) void blurIterationHorizontal(const PPMPixel* restrict ppm, v4Accurate* restrict transpose, v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	
 	const float sizef = (float)size;
 	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
@@ -148,6 +31,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 		register v4Accurate sum2 = {0.0f, 0.0f, 0.0f, 0.0f};
 		register v4Accurate sum3 = {0.0f, 0.0f, 0.0f, 0.0f};
 		register v4Accurate sum4 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum5 = {0.0f, 0.0f, 0.0f, 0.0f};
 
 		// setup first iteration
 		for(int x1 = 0; x1 <= size; ++x1) {
@@ -158,7 +42,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			sum1 += (v4Accurate){ppm[yWidth + x1 + size].red, ppm[yWidth + x1 + size].green, ppm[yWidth + x1 + size].blue, 0.0f};
 			out[yWidth + x1] = sum1 * multiplier / (v4Accurate){sizef + x1 + 1.0f, sizef + x1 + 1.0f, sizef + x1 + 1.0f, 1.0f};
 		}
-		for(int x1 = size + 1; x1 < 4 * size + 4; ++x1){
+		for(int x1 = size + 1; x1 < 5 * size + 5; ++x1){
 			sum1 -= (v4Accurate){ppm[yWidth + x1 - size - 1].red, ppm[yWidth + x1 - size - 1].green, ppm[yWidth + x1 - size - 1].blue, 0.0f};
 			sum1 += (v4Accurate){ppm[yWidth + x1 + size].red, ppm[yWidth + x1 + size].green, ppm[yWidth + x1 + size].blue, 0.0f};
 			out[yWidth + x1] = sum1;
@@ -174,7 +58,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			sum2 += out[yWidth + x2 + size];
 			in[yWidth + x2] = sum2 * multiplier / (v4Accurate){sizef + x2 + 1, sizef + x2 + 1, sizef + x2 + 1, 1.0f};
 		}
-		for(int x2 = size + 1; x2 < 3 * size + 3; ++x2){
+		for(int x2 = size + 1; x2 < 4 * size + 4; ++x2){
 			in[yWidth + x2] = sum2 += out[yWidth + x2 + size] - out[yWidth + x2 - size - 1];
 		}
 		// setup second iteration
@@ -188,7 +72,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			sum3 += in[yWidth + x3 + size];
 			out[yWidth + x3] = sum3 * multiplier / (v4Accurate){sizef + x3 + 1, sizef + x3 + 1, sizef + x3 + 1, 1.0f};
 		}
-		for(int x3 = size + 1; x3 < 2 * size + 2; ++x3){
+		for(int x3 = size + 1; x3 < 3 * size + 3; ++x3){
 			out[yWidth + x3] = sum3 += in[yWidth + x3 + size] - in[yWidth + x3 - size - 1];
 		}
 		// setup third iteration
@@ -202,11 +86,25 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			sum4 += out[yWidth + x4 + size];
 			in[yWidth + x4] = sum4 * multiplier / (v4Accurate){sizef + x4 + 1, sizef + x4 + 1, sizef + x4 + 1, 1.0f};
 		}
+		for(int x4 = size + 1; x4 < 2 * size + 2; ++x4){
+			in[yWidth + x4] = sum4 += out[yWidth + x4 + size] - out[yWidth + x4 - size - 1];
+		}
 		// setup fourth iteration
+
+		// setup fifth iteration
+		for(int x5 = 0; x5 < size + 1; ++x5) {
+			sum5 += in[yWidth + x5];
+		}
+		transpose[0 * height + y] = sum5 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int x5 = 1; x5 < size + 1; ++x5) {
+			sum5 += in[yWidth + x5 + size];
+			transpose[x5 * height + y] = sum5 * multiplier / (v4Accurate){sizef + x5 + 1, sizef + x5 + 1, sizef + x5 + 1, 1.0f};
+		}
+		// setup fifth iteration
 
 		#pragma GCC unroll 16
 		#pragma GCC ivdep
-		for(int x = 4 * size + 4; x < width - size; ++x) {
+		for(int x = 5 * size + 5; x < width - size; ++x) {
 			__builtin_prefetch(&ppm[yWidth + x + size + 42], 0, 3); // two cachelines ahead
 			// __builtin_prefetch(&out[yWidth + x - 1 + PF_OFFSET], 0, 3); // two cachelines ahead
 			sum1 -= (v4Accurate){ppm[yWidth + x - size - 1].red, ppm[yWidth + x - size - 1].green, ppm[yWidth + x - size - 1].blue, 0.0f};
@@ -215,6 +113,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			in[yWidth + x - size - 1] = sum2 += out[yWidth + x - 1] - out[yWidth + x - 2 * size - 2];
 			out[yWidth + x - 2 * size - 2] = sum3 += in[yWidth + x - size - 2] - in[yWidth + x - 3 * size - 3];
 			in[yWidth + x - 3 * size - 3] = sum4 += out[yWidth + x - 2 * size - 3] - out[yWidth + x - 4 * size - 4];
+			transpose[(x - 4 * size - 4) * height + y] = sum5 += in[yWidth + x - 3 * size - 4] - in[yWidth + x - 5 * size - 5];
 		}
 
 		// finishing first iteration
@@ -253,6 +152,16 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(const PPMPixel* res
 			in[yWidth + x4] = sum4 * multiplier / (v4Accurate){sizef + width - x4, sizef + width - x4, sizef + width - x4, 1.0f};
 		}
 		// finishing fourth iteration
+
+		// finishing fifth iteration
+		for(int x5 = width - 5 * size - 4; x5 < width - size; ++x5) {
+			transpose[x5 * height + y] = sum5 += in[yWidth + x5 + size] - in[yWidth + x5 - size - 1];
+		}
+		for(int x5 = width - size; x5 < width; ++x5) {
+			sum5 -= in[yWidth + x5 - size - 1];
+			transpose[x5 * height + y] = sum5 * multiplier / (v4Accurate){sizef + width - x5, sizef + width - x5, sizef + width - x5, 1.0f};
+		}
+		// finishing fifth iteration
 	}
 }
 
@@ -296,57 +205,7 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 	}
 }
 
-/*
-Five vertical blur iteration with a transposed image. Super cache friendly.
-*/
 __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
-	
-	const float sizef = (float)size;
-	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
-	
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
-	for(int x = 0; x < width; ++x) {
-		register const int xHeight = x * height;
-
-		for(int iteration = 0; iteration < 5; ++iteration) {
-			
-			register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
-
-			for(int y = 0; y < size + 1; ++y) {
-				sum += in[xHeight + y];
-			}
-
-			out[xHeight + 0] = sum * multiplier / (v4Accurate){sizef + 1.0f, sizef + 1.0f, sizef + 1.0f, 1.0f};
-
-			for(int y = 1; y < size + 1; ++y) {
-				sum += in[xHeight + y + size];
-				out[xHeight + y] = sum * multiplier / (v4Accurate){y + sizef + 1.0f, y + sizef + 1.0f, y + sizef + 1.0f, 1.0f};
-			}
-
-			#pragma GCC unroll 16
-			#pragma GCC ivdep
-			for(int y = size + 1; y < height - size; ++y) {
-				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
-				out[xHeight + y] = sum += in[xHeight + y + size] - in[xHeight + y - size - 1];
-			}
-
-			for(int y = height - size; y < height; ++y) {
-				sum -= in[xHeight + y - size - 1];
-				out[xHeight + y] = sum * multiplier / (v4Accurate){sizef + height - y, sizef + height - y, sizef + height - y, 1.0f};
-			}
-			// swap in and out
-			v4Accurate* tmp = in;
-			in = out;
-			out = tmp;
-		}
-		// swap in and out
-		v4Accurate* tmp = in;
-		in = out;
-		out = tmp;
-	}
-}
-
-__attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
 	
 	const float sizef = (float)size;
 	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
@@ -529,11 +388,10 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 /*
 Just to clean up and explicitly show what happens to the image.
 */
-void blurImage(const PPMPixel* restrict imageIn, v4Accurate* restrict scratch, v4Accurate* restrict result, const int kernelSize, const int width, const int height) {
-	// blurIterationHorizontalFirst(imageIn, scratch, kernelSize, width, height);
-	blurIterationHorizontalAlternative(imageIn, result, scratch, kernelSize, width, height);
-	blurIterationHorizontalTranspose(result, scratch, kernelSize, width, height);
-	blurIterationVerticalAlternative(scratch, result, kernelSize, width, height);
+void blurImage(const PPMPixel* restrict imageIn, v4Accurate* restrict transpose, v4Accurate* restrict scratch, v4Accurate* restrict result, const int kernelSize, const int width, const int height) {
+	blurIterationHorizontal(imageIn, transpose, result, scratch, kernelSize, width, height);
+	// blurIterationHorizontalTranspose(result, scratch, kernelSize, width, height);
+	blurIterationVertical(transpose, result, kernelSize, width, height);
 }
 
 int main(int argc, char** argv) {
@@ -550,6 +408,7 @@ int main(int argc, char** argv) {
 	
 	aligned_alloc made an improvement due to the alignment with cachelines.
 	*/
+	v4Accurate* restrict transpose = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
 	v4Accurate* restrict scratch = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
 	v4Accurate* restrict one = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
 	v4Accurate* restrict two = (v4Accurate* restrict)aligned_alloc(CACHELINESIZE, sizeof(v4Accurate) * width * height);
@@ -560,24 +419,24 @@ int main(int argc, char** argv) {
 	result->data = (PPMPixel* restrict)aligned_alloc(CACHELINESIZE, sizeof(PPMPixel) * width * height);
 
 	// tiny image
-	blurImage(image->data, scratch, one, 2, width, height);
+	blurImage(image->data, transpose, scratch, one, 2, width, height);
 
 	// small image
-	blurImage(image->data, scratch, two, 3, width, height);
+	blurImage(image->data, transpose, scratch, two, 3, width, height);
 
 	// tinyPPM
 	imageDifference(result->data,  one,  two, width, height, 2.0f, 3.0f);
 	(argc > 1) ? writePPM("flower_tiny.ppm", result) : writeStreamPPM(stdout, result);
 
 	// medium image
-	blurImage(image->data, scratch, one, 5, width, height);
+	blurImage(image->data, transpose, scratch, one, 5, width, height);
 
 	// smallPPM
 	imageDifference(result->data,  two,  one, width, height, 3.0f, 5.0f);
 	(argc > 1) ? writePPM("flower_small.ppm", result) : writeStreamPPM(stdout, result);
 
 	// large image
-	blurImage(image->data, scratch, two, 8, width, height);
+	blurImage(image->data, transpose, scratch, two, 8, width, height);
 
 	// mediumPPM
 	imageDifference(result->data,  one,  two, width, height, 5.0f, 8.0f);
