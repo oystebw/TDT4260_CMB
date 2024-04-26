@@ -54,7 +54,7 @@ __attribute__((hot)) void blurIterationHorizontalFirst(const PPMPixel* restrict 
 
 		out[yWidth + 0] = sum * multiplier / (v4Accurate){sizef + 1.0f, sizef + 1.0f, sizef + 1.0f, 1.0f};
 
-		for(int x = 1; x <= size; ++x) {
+		for(int x = 1; x < size + 1; ++x) {
 			sum += (v4Accurate){in[yWidth + x + size].red, in[yWidth + x + size].green, in[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1.0f, sizef + x + 1.0f, sizef + x + 1.0f, 1.0f};
 		}
@@ -95,13 +95,13 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 			
 			register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
 
-			for(int x = 0; x <= size; ++x) {
+			for(int x = 0; x < size + 1; ++x) {
 				sum += in[yWidth + x];
 			}
 
 			out[yWidth + 0] = sum * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
 
-			for(int x = 1; x <= size; ++x) {
+			for(int x = 1; x < size + 1; ++x) {
 				sum += in[yWidth + x + size];
 				out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1, sizef + x + 1, sizef + x + 1, 1.0f};
 			}
@@ -135,6 +135,95 @@ __attribute__((hot)) void blurIterationHorizontal(v4Accurate* restrict in, v4Acc
 	}
 }
 
+__attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restrict in, v4Accurate* restrict out, const int size, const int width, const int height) {
+	
+	const float sizef = (float)size;
+	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
+	
+	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	for(int y = 0; y < height; ++y) {
+		register const int yWidth = y * width;
+			
+		register v4Accurate sum1 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum2 = {0.0f, 0.0f, 0.0f, 0.0f};
+
+		// setup first iteration
+		for(int x1 = 0; x1 < size + 1; ++x1) {
+			sum1 += in[yWidth + x1];
+		}
+		out[yWidth + 0] = sum1 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int x1 = 1; x1 < size + 1; ++x1) {
+			sum1 += in[yWidth + x1 + size];
+			out[yWidth + x1] = sum1 * multiplier / (v4Accurate){sizef + x1 + 1, sizef + x1 + 1, sizef + x1 + 1, 1.0f};
+		}
+		for(int x1 = size + 1; x1 < 2 * size + 2; ++x1) {
+			out[yWidth + x1] = sum1 += in[yWidth + x1 + size] - in[yWidth + x1 - size - 1];
+		}
+		// setup first iteration
+
+		// setup second iteration
+		for(int x2 = 0; x2 < size + 1; ++x2) {
+			sum1 += out[yWidth + x2];
+		}
+		in[yWidth + 0] = sum1 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int x2 = 1; x2 < size + 1; ++x2) {
+			sum1 += out[yWidth + x2 + size];
+			in[yWidth + x2] = sum1 * multiplier / (v4Accurate){sizef + x2 + 1, sizef + x2 + 1, sizef + x2 + 1, 1.0f};
+		}
+		// setup second iteration
+
+		#pragma GCC unroll 16
+		// #pragma GCC ivdep
+		for(int x = 2 * size + 2; x < width - size; ++x) {
+			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
+			out[yWidth + x] = sum1 += in[yWidth + x + size] - in[yWidth + x - size - 1];
+			in[yWidth + x - size - 1] = sum2 += out[yWidth + x - 1] - out[yWidth + x - 2 * size - 2];
+		}
+
+		// finishing first iteration
+		for(int x1 = width - size; x1 < width; ++x1) {
+			sum1 -= in[yWidth + x1 - size - 1];
+			out[yWidth + x1] = sum1 * multiplier / (v4Accurate){sizef + width - x1, sizef + width - x1, sizef + width - x1, 1.0f};
+		}
+		// finishing first iteration
+
+		// finishing second iteration
+		for(int x2 = width - 2 * size - 1; x2 < width - size; ++x2) {
+			in[yWidth + x2] = sum2 += out[yWidth + x2 + size] -= out[yWidth + x2 - size - 1];
+		}
+		for(int x2 = width - size; x2 < width; ++x2) {
+			sum1 -= out[yWidth + x2 - size - 1];
+			in[yWidth + x2] = sum1 * multiplier / (v4Accurate){sizef + width - x2, sizef + width - x2, sizef + width - x2, 1.0f};
+		}
+		// finishing second iteration
+
+		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
+
+		for(int x = 0; x < size + 1; ++x) {
+			sum += in[yWidth + x];
+		}
+
+		out[yWidth + 0] = sum * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+
+		for(int x = 1; x < size + 1; ++x) {
+			sum += in[yWidth + x + size];
+			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1, sizef + x + 1, sizef + x + 1, 1.0f};
+		}
+
+		#pragma GCC unroll 16
+		#pragma GCC ivdep
+		for(int x = size + 1; x < width - size; ++x) {
+			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
+			out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
+		}
+
+		for(int x = width - size; x < width; ++x) {
+			sum -= in[yWidth + x - size - 1];
+			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + width - x, sizef + width - x, sizef + width - x, 1.0f};
+		}
+	}
+}
+
 /*
 We "cheat" by transposing directly during the fifth horizontal iteration. This is much faster than doing it as a separate routine.
 In addition, we do the non cache-friendly operation as a store, which is better than doing it as a load.
@@ -150,13 +239,13 @@ __attribute__((hot)) void blurIterationHorizontalTranspose(const v4Accurate* res
 
 		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
 
-		for(int x = 0; x <= size; ++x) {
+		for(int x = 0; x < size + 1; ++x) {
 			sum += in[yWidth + x];
 		}
 
 		out[0 * height + y] = sum * multiplier / (v4Accurate){sizef + 1.0f, sizef + 1.0f, sizef + 1.0f, 1.0f};
 
-		for(int x = 1; x <= size; ++x) {
+		for(int x = 1; x < size + 1; ++x) {
 			sum += in[yWidth + x + size];
 			out[x * height + y] = sum * multiplier / (v4Accurate){sizef + x + 1.0f, sizef + x + 1.0f, sizef + x + 1.0f, 1.0f};
 		}
@@ -191,13 +280,13 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 			
 			register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
 
-			for(int y = 0; y <= size; ++y) {
+			for(int y = 0; y < size + 1; ++y) {
 				sum += in[xHeight + y];
 			}
 
 			out[xHeight + 0] = sum * multiplier / (v4Accurate){sizef + 1.0f, sizef + 1.0f, sizef + 1.0f, 1.0f};
 
-			for(int y = 1; y <= size; ++y) {
+			for(int y = 1; y < size + 1; ++y) {
 				sum += in[xHeight + y + size];
 				out[xHeight + y] = sum * multiplier / (v4Accurate){y + sizef + 1.0f, y + sizef + 1.0f, y + sizef + 1.0f, 1.0f};
 			}
@@ -267,7 +356,7 @@ Just to clean up and explicitly show what happens to the image.
 */
 void blurImage(const PPMPixel* restrict imageIn, v4Accurate* restrict scratch, v4Accurate* restrict result, const int kernelSize, const int width, const int height) {
 	blurIterationHorizontalFirst(imageIn, scratch, kernelSize, width, height);
-	blurIterationHorizontal(scratch, result, kernelSize, width, height);
+	blurIterationHorizontalAlternative(scratch, result, kernelSize, width, height);
 	blurIterationHorizontalTranspose(result, scratch, kernelSize, width, height);
 	blurIterationVertical(scratch, result, kernelSize, width, height);
 }
