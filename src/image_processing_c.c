@@ -192,8 +192,8 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 			in[yWidth + x2] = sum2 += out[yWidth + x2 + size] -= out[yWidth + x2 - size - 1];
 		}
 		for(int x2 = width - size; x2 < width; ++x2) {
-			sum1 -= out[yWidth + x2 - size - 1];
-			in[yWidth + x2] = sum1 * multiplier / (v4Accurate){sizef + width - x2, sizef + width - x2, sizef + width - x2, 1.0f};
+			sum2 -= out[yWidth + x2 - size - 1];
+			in[yWidth + x2] = sum2 * multiplier / (v4Accurate){sizef + width - x2, sizef + width - x2, sizef + width - x2, 1.0f};
 		}
 		// finishing second iteration
 
