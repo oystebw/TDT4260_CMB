@@ -176,6 +176,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 		#pragma GCC ivdep
 		for(int x = 2 * size + 2; x < width - size; ++x) {
 			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
+			__builtin_prefetch(&out[yWidth + x - 1 + PF_OFFSET], 0, 3); // two cachelines ahead
 			out[yWidth + x] = sum1 += in[yWidth + x + size] - in[yWidth + x - size - 1];
 			in[yWidth + x - size - 1] = sum2 += out[yWidth + x - 1] - out[yWidth + x - 2 * size - 2];
 		}
@@ -356,6 +357,7 @@ __attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict 
 			#pragma GCC ivdep
 			for(int y = 2 * size + 2; y < height - size; ++y) {
 				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
+				__builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
 				out[xHeight + y] = sum1 += in[xHeight + y + size] - in[xHeight + y - size - 1];
 				in[xHeight + y - size - 1] = sum2 += out[xHeight + y - 1] - out[xHeight + y - 2 * size - 2];
 			}
