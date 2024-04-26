@@ -140,7 +140,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 	const float sizef = (float)size;
 	const v4Accurate multiplier = (v4Accurate){(2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), (2.0f * sizef + 1.0f), 1.0f};
 	
-	#pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
+	// #pragma omp parallel for simd schedule(dynamic, 2) num_threads(8)
 	for(int y = 0; y < height; ++y) {
 		register const int yWidth = y * width;
 			
@@ -172,10 +172,10 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 		}
 		// setup second iteration
 
-		#pragma GCC unroll 16
+		// #pragma GCC unroll 16
 		// #pragma GCC ivdep
 		for(int x = 2 * size + 2; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
+			// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 			out[yWidth + x] = sum1 += in[yWidth + x + size] - in[yWidth + x - size - 1];
 			in[yWidth + x - size - 1] = sum2 += out[yWidth + x - 1] - out[yWidth + x - 2 * size - 2];
 		}
@@ -210,10 +210,10 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 			out[yWidth + x] = sum * multiplier / (v4Accurate){sizef + x + 1, sizef + x + 1, sizef + x + 1, 1.0f};
 		}
 
-		#pragma GCC unroll 16
-		#pragma GCC ivdep
+		// #pragma GCC unroll 16
+		// #pragma GCC ivdep
 		for(int x = size + 1; x < width - size; ++x) {
-			__builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
+			// __builtin_prefetch(&in[yWidth + x + size + PF_OFFSET], 0, 3); // two cachelines ahead
 			out[yWidth + x] = sum += in[yWidth + x + size] - in[yWidth + x - size - 1];
 		}
 
