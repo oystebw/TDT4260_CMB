@@ -325,86 +325,137 @@ __attribute__((hot)) void blurIterationVerticalAlternative(v4Accurate* restrict 
 	for(int x = 0; x < width; ++x) {
 		register const int xHeight = x * height;
 			
-		for(int iteration = 0; iteration < 2; ++iteration){
-			register v4Accurate sum1 = {0.0f, 0.0f, 0.0f, 0.0f};
-			register v4Accurate sum2 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum1 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum2 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum3 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum4 = {0.0f, 0.0f, 0.0f, 0.0f};
+		register v4Accurate sum5 = {0.0f, 0.0f, 0.0f, 0.0f};
 
-			// setup first iteration
-			for(int y1 = 0; y1 < size + 1; ++y1) {
-				sum1 += in[xHeight + y1];
-			}
-			out[xHeight + 0] = sum1 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
-			for(int y1 = 1; y1 < size + 1; ++y1) {
-				sum1 += in[xHeight + y1 + size];
-				out[xHeight + y1] = sum1 * multiplier / (v4Accurate){sizef + y1 + 1, sizef + y1 + 1, sizef + y1 + 1, 1.0f};
-			}
-			for(int y1 = size + 1; y1 < 2 * size + 2; ++y1) {
-				out[xHeight + y1] = sum1 += in[xHeight + y1 + size] - in[xHeight + y1 - size - 1];
-			}
-			// setup first iteration
-
-			// setup second iteration
-			for(int y2 = 0; y2 < size + 1; ++y2) {
-				sum2 += out[xHeight + y2];
-			}
-			in[xHeight + 0] = sum2 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
-			for(int y2 = 1; y2 < size + 1; ++y2) {
-				sum2 += out[xHeight + y2 + size];
-				in[xHeight + y2] = sum2 * multiplier / (v4Accurate){sizef + y2 + 1, sizef + y2 + 1, sizef + y2 + 1, 1.0f};
-			}
-			// setup second iteration
-
-			#pragma GCC unroll 16
-			#pragma GCC ivdep
-			for(int y = 2 * size + 2; y < height - size; ++y) {
-				__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
-				__builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
-				out[xHeight + y] = sum1 += in[xHeight + y + size] - in[xHeight + y - size - 1];
-				in[xHeight + y - size - 1] = sum2 += out[xHeight + y - 1] - out[xHeight + y - 2 * size - 2];
-			}
-
-			// finishing first iteration
-			for(int y1 = height - size; y1 < height; ++y1) {
-				sum1 -= in[xHeight + y1 - size - 1];
-				out[xHeight + y1] = sum1 * multiplier / (v4Accurate){sizef + height - y1, sizef + height - y1, sizef + height - y1, 1.0f};
-			}
-			// finishing first iteration
-
-			// finishing second iteration
-			for(int y2 = height - 2 * size - 1; y2 < height - size; ++y2) {
-				in[xHeight + y2] = sum2 += out[xHeight + y2 + size] -= out[xHeight + y2 - size - 1];
-			}
-			for(int y2 = height - size; y2 < height; ++y2) {
-				sum2 -= out[xHeight + y2 - size - 1];
-				in[xHeight + y2] = sum2 * multiplier / (v4Accurate){sizef + height - y2, sizef + height - y2, sizef + height - y2, 1.0f};
-			}
-			// finishing second iteration
+		// setup first iteration
+		for(int y1 = 0; y1 < size + 1; ++y1) {
+			sum1 += in[xHeight + y1];
 		}
-
-		register v4Accurate sum = {0.0f, 0.0f, 0.0f, 0.0f};
-
-		for(int y = 0; y < size + 1; ++y) {
-			sum += in[xHeight + y];
+		out[xHeight + 0] = sum1 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int y1 = 1; y1 < size + 1; ++y1) {
+			sum1 += in[xHeight + y1 + size];
+			out[xHeight + y1] = sum1 * multiplier / (v4Accurate){sizef + y1 + 1, sizef + y1 + 1, sizef + y1 + 1, 1.0f};
 		}
-
-		out[xHeight + 0] = sum * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
-
-		for(int y = 1; y < size + 1; ++y) {
-			sum += in[xHeight + y + size];
-			out[xHeight + y] = sum * multiplier / (v4Accurate){sizef + y + 1, sizef + y + 1, sizef + y + 1, 1.0f};
+		for(int y1 = size + 1; y1 < 5 * size + 5; ++y1) {
+			out[xHeight + y1] = sum1 += in[xHeight + y1 + size] - in[xHeight + y1 - size - 1];
 		}
+		// setup first iteration
+
+		// setup second iteration
+		for(int y2 = 0; y2 < size + 1; ++y2) {
+			sum2 += out[xHeight + y2];
+		}
+		in[xHeight + 0] = sum2 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int y2 = 1; y2 < size + 1; ++y2) {
+			sum2 += out[xHeight + y2 + size];
+			in[xHeight + y2] = sum2 * multiplier / (v4Accurate){sizef + y2 + 1, sizef + y2 + 1, sizef + y2 + 1, 1.0f};
+		}
+		for(int y2 = size + 1; y2 < 4 * size + 4; ++y2) {
+			in[xHeight + y2] = sum2 += out[xHeight + y2 + size] - out[xHeight + y2 - size - 1];
+		}
+		// setup second iteration
+
+		// setup third iteration
+		for(int y3 = 0; y3 < size + 1; ++y3) {
+			sum3 += in[xHeight + y3];
+		}
+		out[xHeight + 0] = sum3 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int y3 = 1; y3 < size + 1; ++y3) {
+			sum3 += in[xHeight + y3 + size];
+			out[xHeight + y3] = sum3 * multiplier / (v4Accurate){sizef + y3 + 1, sizef + y3 + 1, sizef + y3 + 1, 1.0f};
+		}
+		for(int y3 = size + 1; y3 < 3 * size + 3; ++y3) {
+			out[xHeight + y3] = sum3 += in[xHeight + y3 + size] - in[xHeight + y3 - size - 1];
+		}
+		// setup third iteration
+
+		// setup fourth iteration
+		for(int y4 = 0; y4 < size + 1; ++y4) {
+			sum4 += out[xHeight + y4];
+		}
+		in[xHeight + 0] = sum4 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int y4 = 1; y4 < size + 1; ++y4) {
+			sum4 += out[xHeight + y4 + size];
+			in[xHeight + y4] = sum4 * multiplier / (v4Accurate){sizef + y4 + 1, sizef + y4 + 1, sizef + y4 + 1, 1.0f};
+		}
+		for(int y4 = size + 1; y4 < 2 * size + 2; ++y4) {
+			in[xHeight + y4] = sum4 += out[xHeight + y4 + size] - out[xHeight + y4 - size - 1];
+		}
+		// setup fourth iteration
+
+		// setup fifth iteration
+		for(int y5 = 0; y5 < size + 1; ++y5) {
+			sum5 += in[xHeight + y5];
+		}
+		out[xHeight + 0] = sum5 * multiplier / (v4Accurate){sizef + 1, sizef + 1, sizef + 1, 1.0f};
+		for(int y5 = 1; y5 < size + 1; ++y5) {
+			sum5 += in[xHeight + y5 + size];
+			out[xHeight + y5] = sum5 * multiplier / (v4Accurate){sizef + y5 + 1, sizef + y5 + 1, sizef + y5 + 1, 1.0f};
+		}
+		// setup last iteration
 
 		#pragma GCC unroll 16
 		#pragma GCC ivdep
-		for(int y = size + 1; y < height - size; ++y) {
+		for(int y = 5 * size + 5; y < height - size; ++y) {
 			__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
-			out[xHeight + y] = sum += in[xHeight + y + size] - in[xHeight + y - size - 1];
+			__builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
+			out[xHeight + y] = sum1 += in[xHeight + y + size] - in[xHeight + y - size - 1];
+			in[xHeight + y - size - 1] = sum2 += out[xHeight + y - 1] - out[xHeight + y - 2 * size - 2];
+			out[xHeight + y - 2 * size - 2] = sum3 += in[xHeight + y - size - 2] - in[xHeight + y - 3 * size - 3];
+			in[xHeight + y - 3 * size - 3] = sum4 += out[xHeight + y - 2 * size - 3] - out[xHeight + y - 4 * size - 4];
+			out[xHeight + y - 4 * size - 4] = sum5 += in[xHeight + y - 3 * size - 4] - in[xHeight + y - 5 * size - 5];
 		}
 
-		for(int y = height - size; y < height; ++y) {
-			sum -= in[xHeight + y - size - 1];
-			out[xHeight + y] = sum * multiplier / (v4Accurate){sizef + height - y, sizef + height - y, sizef + height - y, 1.0f};
+		// finishing first iteration
+		for(int y1 = height - size; y1 < height; ++y1) {
+			sum1 -= in[xHeight + y1 - size - 1];
+			out[xHeight + y1] = sum1 * multiplier / (v4Accurate){sizef + height - y1, sizef + height - y1, sizef + height - y1, 1.0f};
 		}
+		// finishing first iteration
+
+		// finishing second iteration
+		for(int y2 = height - 2 * size - 1; y2 < height - size; ++y2) {
+			in[xHeight + y2] = sum2 += out[xHeight + y2 + size] -= out[xHeight + y2 - size - 1];
+		}
+		for(int y2 = height - size; y2 < height; ++y2) {
+			sum2 -= out[xHeight + y2 - size - 1];
+			in[xHeight + y2] = sum2 * multiplier / (v4Accurate){sizef + height - y2, sizef + height - y2, sizef + height - y2, 1.0f};
+		}
+		// finishing second iteration
+
+		// finishing third iteration
+		for(int y3 = height - 3 * size - 2; y3 < height - size; ++y3) {
+			out[xHeight + y3] = sum3 += in[xHeight + y3 + size] -= in[xHeight + y3 - size - 1];
+		}
+		for(int y3 = height - size; y3 < height; ++y3) {
+			sum3 -= in[xHeight + y3 - size - 1];
+			out[xHeight + y3] = sum3 * multiplier / (v4Accurate){sizef + height - y3, sizef + height - y3, sizef + height - y3, 1.0f};
+		}
+		// finishing third iteration
+
+		// finishing fourth iteration
+		for(int y4 = height - 4 * size - 3; y4 < height - size; ++y4) {
+			in[xHeight + y4] = sum4 += out[xHeight + y4 + size] -= out[xHeight + y4 - size - 1];
+		}
+		for(int y4 = height - size; y4 < height; ++y4) {
+			sum4 -= out[xHeight + y4 - size - 1];
+			in[xHeight + y4] = sum4 * multiplier / (v4Accurate){sizef + height - y4, sizef + height - y4, sizef + height - y4, 1.0f};
+		}
+		// finishing fourth iteration
+
+		// finishing fifth iteration
+		for(int y5 = height - 5 * size - 4; y5 < height - size; ++y5) {
+			out[xHeight + y5] = sum5 += in[xHeight + y5 + size] -= in[xHeight + y5 - size - 1];
+		}
+		for(int y5 = height - size; y5 < height; ++y5) {
+			sum5 -= in[xHeight + y5 - size - 1];
+			out[xHeight + y5] = sum5 * multiplier / (v4Accurate){sizef + height - y5, sizef + height - y5, sizef + height - y5, 1.0f};
+		}
+		// finishing fifth iteration
 	}
 }
 
