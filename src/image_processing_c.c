@@ -13,7 +13,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 #define CACHELINESIZE 64
 #define PF_OFFSET 8
 
-typedef double v4Accurate __attribute__((vector_size(32)));
+typedef float v4Accurate __attribute__((vector_size(16)));
 
 // Image from:
 // http://7-themes.com/6971875-funny-flowers-pictures.html
