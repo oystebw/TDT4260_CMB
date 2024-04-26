@@ -188,7 +188,7 @@ __attribute__((hot)) void blurIterationHorizontalAlternative(v4Accurate* restric
 		// finishing first iteration
 
 		// finishing second iteration
-		for(int x2 = width - 2 * size - 1 - 10; x2 < width - size; ++x2) {
+		for(int x2 = width - 2 * size - 1 - 11; x2 < width - size; ++x2) {
 			in[yWidth + x2] = sum2 += out[yWidth + x2 + size] -= out[yWidth + x2 - size - 1];
 		}
 		for(int x2 = width - size; x2 < width; ++x2) {
