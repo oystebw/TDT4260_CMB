@@ -88,7 +88,6 @@ __attribute__((hot)) void blurIterationHorizontal(const PPMPixel* restrict ppm, 
 		// setup fourth iteration
 
 		#pragma GCC unroll 16
-		#pragma GCC ivdep
 		for(int x = 4 * size + 4; x < width - size; ++x) {
 			__builtin_prefetch(&ppm[yWidth + x + size + 42], 0, 3); // two cachelines ahead
 			// __builtin_prefetch(&out[yWidth + x - 1 + PF_OFFSET], 0, 3); // two cachelines ahead
@@ -265,7 +264,6 @@ __attribute__((hot)) void blurIterationVertical(v4Accurate* restrict in, v4Accur
 		// setup last iteration
 
 		#pragma GCC unroll 16
-		#pragma GCC ivdep
 		for(int y = 5 * size + 5; y < height - size; ++y) {
 			__builtin_prefetch(&in[xHeight + y + size + PF_OFFSET], 0, 3); // two cachelines ahead
 			// __builtin_prefetch(&out[xHeight + y - 1 + PF_OFFSET], 0, 3);
