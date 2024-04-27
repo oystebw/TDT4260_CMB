@@ -11,7 +11,7 @@ __attribute__((optimize("prefetch-loop-arrays")))
 
 #define BLOCKSIZE 8
 #define CACHELINESIZE 64
-#define PF_OFFSET 8
+#define PF_OFFSET 64
 
 typedef float v4Accurate __attribute__((vector_size(16)));
 
@@ -94,7 +94,7 @@ __attribute__((hot)) void blurIterationHorizontal(const PPMPixel* restrict ppm, 
 
 		#pragma GCC unroll 16
 		for(int x = 4 * size + 4; x < width - size; ++x) {
-			__builtin_prefetch(&ppm[yWidth + x + size + 42], 0, 3); // two cachelines ahead
+			__builtin_prefetch(&ppm[yWidth + x + size + 350], 0, 3); // two cachelines ahead
 			sum1 -= (v4Accurate){ppm[yWidth + x - size - 1].red, ppm[yWidth + x - size - 1].green, ppm[yWidth + x - size - 1].blue, 0.0f};
 			sum1 += (v4Accurate){ppm[yWidth + x + size].red, ppm[yWidth + x + size].green, ppm[yWidth + x + size].blue, 0.0f};
 			out[yWidth + x] = sum1;
@@ -344,11 +344,11 @@ __attribute__((hot)) void imageDifference(PPMPixel* restrict imageOut, const v4A
 			for(int x = xx; x < xx + BLOCKSIZE; ++x) {
 				register const int xHeight = x * height;
 				// first four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height * 2 + yy], 0, 3);
-				__builtin_prefetch(&small[xHeight + height * 2 + yy], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 4 + yy], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 4 + yy], 0, 3);
 				// last four elements in tight loop
-				__builtin_prefetch(&large[xHeight + height * 2 + yy + 4], 0, 3);
-				__builtin_prefetch(&small[xHeight + height * 2 + yy + 4], 0, 3);
+				__builtin_prefetch(&large[xHeight + height * 4 + yy + 4], 0, 3);
+				__builtin_prefetch(&small[xHeight + height * 4 + yy + 4], 0, 3);
 				#pragma GGC unroll 8
 				#pragma GCC ivdep
 				for(int y = yy; y < yy + BLOCKSIZE; ++y) {
